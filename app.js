@@ -10,6 +10,7 @@ const protoschema = require('protocol-buffers-schema');
 const request = require('request-promise-native');
 const { print, stringify } = require('q-i');
 const fs = require('fs');
+const filter = require('through2-filter');
 
 //app.get('/', function(req, res) {});
 
@@ -50,16 +51,13 @@ function getTrainsStatus() {
 	);
 }
 
-function getTrip(trip_id) {
+function getEntity(datafile, filter) {
 	return new Promise(function(resolve, reject) {
 		try {
-			const trip_parser = require('through2-filter')({objectMode : true}, function(chunk) {
-				return chunk.trip_id == trip_id;
-			});
 			const csv_parser = require('csv-streamify')({ columns : true, objectMode : true });
-			trip_parser.on('data', resolve);
+			filter.on('data', resolve);
 
-			fs.createReadStream('tt/trips.txt').pipe(csv_parser).pipe(trip_parser);
+			fs.createReadStream(datafile).pipe(csv_parser).pipe(filter);
 		} catch (err) {
 			reject(err);
 		}
@@ -80,19 +78,45 @@ function sendTriggerToIFTTT(statusArray) {
 function entityText(entity) { return entity.alert.header_text.translation[0].text + ' ' + 
 		entity.alert.description_text.translation[0].text; }
 
-getTrip("1--A.1293.117.68.B.8.57383532")
-	.then(print)
-	.catch(e => console.log(e));
 
-// getGTFSSchema()
-// 	.then( gtfs => { 
-// 		getTrainsStatus().then( res => {
-// 			var data = new proto(res.body);
-// 			gtfs.FeedMessage.read(data).entity.forEach( entity => {
-// 				if (entity.alert.informed_entity[0].route_id) { console.log(`route ${entityText(entity)}`); }
-// 				if (entity.alert.informed_entity[0].trip) { console.log(`trip ${entityText(entity)}`); }
-// 				if (entity.alert.informed_entity[0].stop_id) { console.log(`station ${entityText(entity)}`); }
-// 			});
-// 		})
-// 	})
-// 	.catch( err => console.log(err.message) );
+function getStop(stop_id) {
+	return getEntity("tt/stops.txt", 
+		filter({ objectMode : true }, function(chunk) { return chunk.stop_id == stop_id })
+	)
+}
+function getTrip(trip_id) {
+	return getEntity("tt/trips.txt", 
+		filter({ objectMode : true }, function(chunk) { return chunk.trip_id == trip_id })
+	)
+}
+
+function getRoute(route_id) {
+	return getEntity("tt/routes.txt", 
+		filter({ objectMode : true }, function(chunk) { return chunk.route_id == route_id })
+	)
+}
+
+getGTFSSchema()
+	.then( gtfs => { 
+		getTrainsStatus().then( res => {
+			var data = new proto(res.body);
+			gtfs.FeedMessage.read(data).entity.forEach( entity => {
+				if (entity.alert.informed_entity[0].trip) {
+					getTrip(entity.alert.informed_entity[0].trip).then(trip => {
+						console.log(`${trip.headsign} (${trip.service_id}): ${entityText(entity)}`);
+					})
+				} else if (entity.alert.informed_entity[0].stop_id) {
+					getStop(entity.alert.informed_entity[0].stop_id).then(stop => {
+						console.log(`${stop.stop_name} ${entityText(entity)}`);
+					});
+				} else if (entity.alert.informed_entity[0].route_id) {
+					getRoute(entity.alert.informed_entity[0].route_id).then(route => {
+						console.log(`${route.route_desc}: ${entityText(entity)}`);
+					})
+				} else {
+					print(entity)
+				}
+			})
+		})
+	})
+	.catch( err => console.log(err.message) );
