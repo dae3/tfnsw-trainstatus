@@ -46,7 +46,7 @@ function getTrainsStatus() {
 		{ 
 			resolveWithFullResponse : true,
 			encoding : null,
-			headers : { Authorization : 'apikey w7QwFEj6bwBLmulA8AYXtRkHcJc4RSPx3ye7' } 
+			headers : { Authorization : `apikey ${process.env.TFNSW_API_KEY}` } 
 		}
 	);
 }
