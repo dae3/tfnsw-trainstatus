@@ -59,5 +59,10 @@ typings/
 
 # next.js build output
 .next
+
+# vim swapfiles
 *.sw? 
+
+# API data
 tt
+sydneytrains.zip
