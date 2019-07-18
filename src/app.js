@@ -1,23 +1,12 @@
 'use strict';
 require('dotenv').config();
 const gtfs = require('./gtfs.js');
-import { interval, from, subscribe } from 'rxjs';
+import { interval, from } from 'rxjs';
 import { filter, mapTo, map, take, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 
-exports.status = function(req, res) {
-	if (req.method == 'GET' && req.query.line) {
-		st = getTrainsStatus();
-		st.on('end', () => res.status(200).end());
-		st.pipe(res);
-	} else {
-		res.status(400).end('bad request');
-	} 
-}
-
 const schema = from(gtfs.getGTFSSchema());
 const timer = interval(50).pipe(take(1));
-const routes = [ 'CCN_1a' ];
 
 schema.subscribe(schema => {
 	const alerts = timer.pipe(
