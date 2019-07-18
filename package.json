@@ -5,6 +5,7 @@
 	"main": "app.js",
 	"scripts": {
 		"start": "nodemon --exec babel-node src/app.js",
+		"once": "babel-node src/app.js",
 		"serve": "node dist/app.js",
 		"build": "babel src --out-dir dist",
 		"test": "mocha"
@@ -32,8 +33,13 @@
 		"through2-filter": "^3.0.0"
 	},
 	"devDependencies": {
+		"@babel/cli": "^7.5.5",
+		"@babel/core": "^7.5.5",
+		"@babel/node": "^7.5.5",
+		"@babel/preset-env": "^7.5.5",
 		"mocha": "^6.1.4",
 		"nock": "^10.0.6",
+		"q-i": "^2.0.1",
 		"should": "^13.2.3",
 		"sinon": "^7.3.2"
 	}

@@ -1,9 +1,11 @@
 const https = require('https');
 const proto = require('pbf');
+const protocomp = require('pbf/compile');
 const protoschema = require('protocol-buffers-schema');
 const request = require('request-promise-native');
 const fs = require('fs');
 const filter = require('through2-filter');
+const { print, stringify } = require('q-i');
 
 function getGTFSSchema() {
 	return new Promise(function(resolve, reject) {
@@ -19,15 +21,39 @@ function getGTFSSchema() {
 	});
 }
 
+// returns a Promise that resolves to an encoded GTFS FeedMessage
 function getTrainsStatus() {
-	return request(
-		'https://api.transport.nsw.gov.au/v1/gtfs/alerts/sydneytrains',
-		{ 
-			resolveWithFullResponse : true,
-			encoding : null,
-			headers : { Authorization : `apikey ${process.env.TFNSW_API_KEY}` } 
-		}
-	);
+		return request(
+			'https://api.transport.nsw.gov.au/v1/gtfs/alerts/sydneytrains',
+			{ 
+				resolveWithFullResponse : true,
+				encoding : null,
+				headers : { Authorization : `apikey ${process.env.TFNSW_API_KEY}` } 
+			}
+		)
+}
+
+function parseGTFS(raw_resp) {
+	return new proto(raw_resp);
+};
+
+// gtfs: gtfs schema object
+// gtfs_feedmessage: an encoded GTFS FeedMessage
+// returns: an array of Promises resolving to entity detail object
+function processFeedMessage(gtfs, gtfs_feedmessage) {
+	const entities = [];
+	gtfs.FeedMessage.read(gtfs_feedmessage).entity.forEach(e=>entities.push(getEntityA(e)));
+	return entities;
+}
+
+function getEntityA(gtfs_entity) {
+	if (gtfs_entity.alert.informed_entity[0].trip) {
+		return getTrip(gtfs_entity.alert.informed_entity[0].trip)
+	} else if (gtfs_entity.alert.informed_entity[0].stop_id) {
+		return getStop(gtfs_entity.alert.informed_entity[0].stop_id)
+	} else if (gtfs_entity.alert.informed_entity[0].route_id) {
+		return getRoute(gtfs_entity.alert.informed_entity[0].route_id)
+	}
 }
 
 function getEntity(datafile, filter) {
@@ -44,18 +70,20 @@ function getEntity(datafile, filter) {
 }
 
 function getStop(stop_id) {
-	return getEntity("../tt/stops.txt", 
+	return getEntity("tt/stops.txt", 
 		filter({ objectMode : true }, function(chunk) { return chunk.stop_id == stop_id })
 	)
 }
 function getTrip(trip_id) {
-	return getEntity("../tt/trips.txt", 
+	return getEntity("tt/trips.txt", 
 		filter({ objectMode : true }, function(chunk) { return chunk.trip_id == trip_id })
 	)
 }
 
 function getRoute(route_id) {
-	return getEntity("../tt/routes.txt", 
+	return getEntity("tt/routes.txt", 
 		filter({ objectMode : true }, function(chunk) { return chunk.route_id == route_id })
 	)
 }
+
+module.exports = { getGTFSSchema, getTrainsStatus, processFeedMessage, parseGTFS }
