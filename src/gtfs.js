@@ -85,4 +85,4 @@ function getRoute(route_id) {
 	)
 }
 
-module.exports = { getGTFSSchema, getTrainsStatus, processFeedMessage, parseGTFS }
+module.exports = { getGTFSSchema, getTrainsStatus, processFeedMessage, parseGTFS, getEntity }
