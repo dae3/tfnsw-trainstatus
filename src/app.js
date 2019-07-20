@@ -2,12 +2,12 @@
 require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
-import { merge, interval, from } from 'rxjs';
-import { filter, distinct, mapTo, map, take, mergeAll } from 'rxjs/operators';
+import { of, merge, interval, from } from 'rxjs';
+import { flatMap, filter, distinct, mapTo, map, take, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 
 const schema = from(gtfs.getGTFSSchema());
-const timer = interval(500).pipe(take(3));
+const timer = interval(50).pipe(take(1));
 
 schema.subscribe(schema => {
 	const alerts = timer.pipe(
@@ -39,12 +39,12 @@ schema.subscribe(schema => {
 	);
 
 	user_all
-		.pipe( map(alert_formatter), distinct() )
-		.subscribe(print)
-
+		.pipe( flatMap(alert_formatter), distinct() )
+				.subscribe(print)
+	//	.subscribe(x=>x)
 	//		.subscribe(send_notification)
 
-	//	all_route_alerts.pipe( map(alert_formatter), distinct() ).subscribe(send_notification);
+	//	all_route_alerts.subscribe(a=>print(a.alert.informed_entity));
 })
 
 function send_notification(text) {
@@ -62,9 +62,16 @@ function send_notification(text) {
 }
 
 function alert_formatter(entity) {
-	return entity.alert.informed_entity.reduce(
-		function(a,v,i) { return (i > 0 ? a + ', ' : '') + entity_id(v) }, ''
-	) + ': ' + entity.alert.description_text.translation[0].text;
+	return from(new Promise( function(resolve, reject) {
+		var entities = Array.from(entity.alert.informed_entity, gtfs.getEntityName);
+		Promise.all(entities)
+			.then(ea => {
+				resolve(ea.reduce((a,v,i)=>(i>0?a+', ':'')+v,'') + ' ' +
+				 entity.alert.description_text.translation[0].text
+				)
+			})
+	} )
+	)
 }
 
 function entity_id(entity) {
