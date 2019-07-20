@@ -3,11 +3,11 @@ require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
 import { of, merge, interval, from } from 'rxjs';
-import { flatMap, filter, distinct, mapTo, map, take, mergeAll } from 'rxjs/operators';
+import { flatMap, filter, distinctUntilKeyChanged, mapTo, map, take, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 
 const schema = from(gtfs.getGTFSSchema());
-const timer = interval(50).pipe(take(1));
+const timer = interval(50).pipe(take(3));
 
 schema.subscribe(schema => {
 	const alerts = timer.pipe(
@@ -39,7 +39,7 @@ schema.subscribe(schema => {
 	);
 
 	user_all
-		.pipe( flatMap(alert_formatter), distinct() )
+		.pipe( flatMap(alert_formatter), distinctUntilKeyChanged('message') )
 				.subscribe(print)
 	//	.subscribe(x=>x)
 	//		.subscribe(send_notification)
@@ -47,14 +47,14 @@ schema.subscribe(schema => {
 	//	all_route_alerts.subscribe(a=>print(a.alert.informed_entity));
 })
 
-function send_notification(text) {
+function send_notification(alert) {
 	request(
 		'https://maker.ifttt.com/trigger/trainstatus/with/key/brp_hwHjO0oMMOCJTmBGDC/',
 		{
 			method : 'POST',
 			headers : { 'Content-Type' : 'application/json' },
 			json : true,
-			body : { value1 : 'Train status', value2: text }
+			body : { value1 : alert.title, value2: alert.message, value3: alert.link }
 		}
 	)
 		.then( () => { /* don't care */ } )
@@ -63,16 +63,22 @@ function send_notification(text) {
 
 function alert_formatter(entity) {
 	return from(new Promise( function(resolve, reject) {
-		var entities = Array.from(entity.alert.informed_entity, gtfs.getEntityName);
-		Promise.all(entities)
-			.then(ea => {
-				resolve(ea.reduce((a,v,i)=>(i>0?a+', ':'')+v,'') + ' ' +
-				 entity.alert.description_text.translation[0].text
+		var entities = entity.alert.informed_entity.map(gtfs.getEntityName);
+		Promise.all(entities).then(ea => {
+				resolve(
+					{
+						'title' : ea
+							.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
+							.reduce((a,v,i)=>a+(i>0?', ':'')+v, ''),
+						'message' : entity.alert.description_text.translation[0].text,
+						'link'  : entity.alert.url.translation[0].text
+					}
 				)
 			})
-	} )
+	})
 	)
 }
+
 
 function entity_id(entity) {
 	if (entity.trip) {
