@@ -48,10 +48,10 @@ function processFeedMessage(gtfs, gtfs_feedmessage) {
 
 function getEntityName(entity) {
 	if (entity.trip) {
-		return getTrip(entity.trip)
-	} else if (entity.stop_id) {
+		return getTrip(entity.trip.trip_id)
+	} else if (entity.stop_id != '') {
 		return getStop(entity.stop_id)
-	} else if (entity.route_id) {
+	} else if (entity.route_id != '') {
 		return getRoute(entity.route_id)
 	}
 }
@@ -92,7 +92,7 @@ function getTrip(trip_id) {
 			"tt/trips.txt", 
 			filter({ objectMode : true }, function(chunk) { return chunk.trip_id == trip_id })
 		)
-			.then((trip) => resolve(trip.trip_short_name))
+			.then((trip) => resolve(trip.trip_headsign))
 		})
 }
 

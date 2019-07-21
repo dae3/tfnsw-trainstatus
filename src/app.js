@@ -2,12 +2,12 @@
 require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
-import { of, merge, interval, from } from 'rxjs';
+import { merge, interval, from } from 'rxjs';
 import { flatMap, filter, distinctUntilKeyChanged, mapTo, map, take, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 
 const schema = from(gtfs.getGTFSSchema());
-const timer = interval(50).pipe(take(3));
+const timer = interval(1000).pipe(take(3));
 
 schema.subscribe(schema => {
 	const alerts = timer.pipe(
@@ -40,16 +40,12 @@ schema.subscribe(schema => {
 
 	user_all
 		.pipe( flatMap(alert_formatter), distinctUntilKeyChanged('message') )
-				.subscribe(print)
-	//	.subscribe(x=>x)
-	//		.subscribe(send_notification)
-
-	//	all_route_alerts.subscribe(a=>print(a.alert.informed_entity));
+		.subscribe(print)
 })
 
 function send_notification(alert) {
 	request(
-		'https://maker.ifttt.com/trigger/trainstatus/with/key/brp_hwHjO0oMMOCJTmBGDC/',
+		'https://maker.ifttt.com/trigger/trainstatus/with/key/Qqw2HEP21J5pq3rS0lUm2/',
 		{
 			method : 'POST',
 			headers : { 'Content-Type' : 'application/json' },
@@ -67,9 +63,9 @@ function alert_formatter(entity) {
 		Promise.all(entities).then(ea => {
 				resolve(
 					{
-						'title' : ea
-							.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
-							.reduce((a,v,i)=>a+(i>0?', ':'')+v, ''),
+						'title' : entity.alert.header_text.translation[0].text + '(' +
+							ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
+							.reduce((a,v,i)=>a+(i>0?', ':'')+v, '') + ')' ,
 						'message' : entity.alert.description_text.translation[0].text,
 						'link'  : entity.alert.url.translation[0].text
 					}
@@ -99,5 +95,5 @@ function route_filter(id) {
 	return (entity) => entity.alert.informed_entity.map(i=>i.route_id).includes(id)
 }
 function trip_filter(id) {
-	return (entity) => entity.alert.informed_entity.map(i=>i.trip_id).includes(id)
+	return (entity) => entity.alert.informed_entity.trip && entity.alert.informed_entity.map(i=>i.trip.trip_id.slice(0, trip_id.indexOf('.')-1)).includes(id)
 }
