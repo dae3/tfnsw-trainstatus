@@ -2,15 +2,21 @@
 require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
-import { merge, interval, from } from 'rxjs';
+import { merge, timer, interval, from } from 'rxjs';
 import { flatMap, filter, distinctUntilKeyChanged, mapTo, map, take, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 
 const schema = from(gtfs.getGTFSSchema());
-const timer = interval(1000).pipe(take(3));
-
+const test_timer = interval(1000).pipe(take(3));
+const prod_timer = timer(0, 1000 * 60 * 30).pipe( filter(function(x) {
+	const DoW = [1,2,3,4,5];
+	const HoD = [4,5,6,7,17,18,19,20];
+	const now = new Date();
+	return DoW.includes(now.getDay()) && HoD.includes(now.getHours())
+})
+)
 schema.subscribe(schema => {
-	const alerts = timer.pipe(
+	const alerts = prod_timer.pipe(
 		mapTo( from(gtfs.getTrainsStatus() ) ),
 		mergeAll(), 		// resolve nested Promises emitted
 		map(raw => gtfs.parseGTFS(raw.body)),
@@ -40,7 +46,7 @@ schema.subscribe(schema => {
 
 	user_all
 		.pipe( flatMap(alert_formatter), distinctUntilKeyChanged('message') )
-		.subscribe(print)
+		.subscribe(send_notification)
 })
 
 function send_notification(alert) {
@@ -63,7 +69,7 @@ function alert_formatter(entity) {
 		Promise.all(entities).then(ea => {
 				resolve(
 					{
-						'title' : entity.alert.header_text.translation[0].text + '(' +
+						'title' : entity.alert.header_text.translation[0].text + ' (' +
 							ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
 							.reduce((a,v,i)=>a+(i>0?', ':'')+v, '') + ')' ,
 						'message' : entity.alert.description_text.translation[0].text,
