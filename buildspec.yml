@@ -19,22 +19,21 @@ phases:
     #commands:
       # - command
       # - command
-  #pre_build:
-    #commands:
+  pre_build:
+    commands:
+      - npm install
       # - command
       # - command
   build:
     commands:
-      - npm install
       - npm run-script build
   #post_build:
     #commands:
       # - command
       # - command
-#artifacts:
-  #files:
-    # - location
-    # - location
+artifacts:
+  files:
+     - dist/*.js
   #name: $(date +%Y-%m-%d)
   #discard-paths: yes
   #base-directory: location
