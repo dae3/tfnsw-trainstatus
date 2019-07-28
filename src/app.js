@@ -2,66 +2,47 @@
 require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
-import { merge, timer, interval, from } from 'rxjs';
-import { flatMap, filter, distinctUntilKeyChanged, mapTo, map, take, mergeAll } from 'rxjs/operators';
+import { merge, from, timer } from 'rxjs';
+import { flatMap, filter, mapTo, map, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
+const aws = require('aws-sdk');
 
-const schema = from(gtfs.getGTFSSchema());
-const test_timer = interval(1000).pipe(take(3));
-const prod_timer = timer(0, 1000 * 60 * 30).pipe( filter(function(x) {
-	const DoW = [1,2,3,4,5];
-	const HoD = [4,5,6,7,17,18,19,20];
-	const now = new Date();
-	return DoW.includes(now.getDay()) && HoD.includes(now.getHours())
-})
-)
-schema.subscribe(schema => {
-	const alerts = prod_timer.pipe(
-		mapTo( from(gtfs.getTrainsStatus() ) ),
-		mergeAll(), 		// resolve nested Promises emitted
-		map(raw => gtfs.parseGTFS(raw.body)),
-		map(cooked => schema.FeedMessage.read(cooked).entity),
-		mergeAll()
-	)
+exports.handler = function(event, context, callback) {
+	// context.callbackWaitsForEmptyEventLoop = false
+	from(gtfs.getGTFSSchema()).subscribe(schema => {
+		const alerts = timer(100).pipe(
+			mapTo(from(gtfs.getTrainsStatus())),
+			mergeAll(),
+			map(raw => gtfs.parseGTFS(raw.body)),
+			map(cooked => schema.FeedMessage.read(cooked).entity),
+			mergeAll()
+		)
 
-	const all_stop_alerts = alerts.pipe(filter(e => e.alert.informed_entity[0].stop_id));
-	const all_trip_alerts = alerts.pipe(filter(e => e.alert.informed_entity[0].trip));
-	const all_route_alerts = alerts.pipe(filter(e => e.alert.informed_entity[0].route_id));
+		const user_all = merge(
+			alerts.pipe( filter(stop_filter('278210') ) ),
+			alerts.pipe( filter(stop_filter('2782181') ) ),
+			alerts.pipe( filter(stop_filter('2782182') ) ),
+			alerts.pipe( filter(stop_filter('200060') ) ),
+			alerts.pipe( filter(stop_filter('206520') ) ),
+			alerts.pipe( filter(route_filter('BMT_1') ) ),
+			alerts.pipe( filter(route_filter('BMT_2') ) ),
+			alerts.pipe( filter(route_filter('WST_1a') ) ),
+			alerts.pipe( filter(route_filter('WST_1b') ) ),
+			alerts.pipe( filter(route_filter('WST_2c') ) ),
+			alerts.pipe( filter(route_filter('WST_2d') ) ),
+			alerts.pipe( filter(trip_filter('W512') ) ),
+			alerts.pipe( filter(trip_filter('W579') ) )
+		);
 
-	const user_all = merge(
-		alerts.pipe( filter(stop_filter('278210') ) ),
-		alerts.pipe( filter(stop_filter('2782181') ) ),
-		alerts.pipe( filter(stop_filter('2782182') ) ),
-		alerts.pipe( filter(stop_filter('200060') ) ),
-		alerts.pipe( filter(stop_filter('206520') ) ),
-		alerts.pipe( filter(route_filter('BMT_1') ) ),
-		alerts.pipe( filter(route_filter('BMT_2') ) ),
-		alerts.pipe( filter(route_filter('WST_1a') ) ),
-		alerts.pipe( filter(route_filter('WST_1b') ) ),
-		alerts.pipe( filter(route_filter('WST_2c') ) ),
-		alerts.pipe( filter(route_filter('WST_2d') ) ),
-		alerts.pipe( filter(trip_filter('W512') ) ),
-		alerts.pipe( filter(trip_filter('W579') ) )
-	);
-
-	user_all
-		.pipe( flatMap(alert_formatter), distinctUntilKeyChanged('message') )
-		.subscribe(send_notification)
-})
-
-function send_notification(alert) {
-	request(
-		'https://maker.ifttt.com/trigger/trainstatus/with/key/Qqw2HEP21J5pq3rS0lUm2/',
-		{
-			method : 'POST',
-			headers : { 'Content-Type' : 'application/json' },
-			json : true,
-			body : { value1 : alert.title, value2: alert.message, value3: alert.link }
-		}
-	)
-		.then( () => { /* don't care */ } )
-		.catch( () => { /* don't care */ } )
+		alerts
+			.pipe( flatMap(alert_formatter) )
+			.subscribe(
+				r => callback(null, r),
+				err => console.log(err)
+			)
+	})
 }
+
 
 function alert_formatter(entity) {
 	return from(new Promise( function(resolve, reject) {
