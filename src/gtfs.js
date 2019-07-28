@@ -6,17 +6,15 @@ const request = require('request-promise-native');
 const fs = require('fs');
 const filter = require('through2-filter');
 const { print, stringify } = require('q-i');
+const aws = require('aws-sdk');
+const streambuf = require('stream-buffers');
+const cloneable = require('cloneable-readable');
 
 function getGTFSSchema() {
 	return new Promise(function(resolve, reject) {
-		request('https://developers.google.com/transit/gtfs-realtime/gtfs-realtime.proto', { resolveWithFullResponse : true } )
-			.then( res => {
-				if (res.statusCode == 200) {
-					resolve(protocomp(protoschema.parse(res.body)));
-				} else {
-					reject(`Couldn't download schema: ${res.statusCode}`);
-				}
-			})
+		const s3 = new aws.S3();
+		s3.getObject({Bucket:'tfnsw-gtfs',Key:'gtfs-realtime.proto'}).promise()
+			.then( res => { resolve(protocomp(protoschema.parse(res.Body.toString()))) })
 			.catch( reject );
 	});
 }
@@ -66,20 +64,34 @@ function getEntity(gtfs_entity) {
 	}
 }
 
-
 function getEntityFromDb(datafile, filter, callback) {
 	// TODO pull csv-streamify require to global scope
+	const PREFIX = '/tmp/';
+	var db;
+	const csv_parser = require('csv-streamify')({ columns : true, objectMode : true });
+
 	return new Promise( function(resolve, reject) {
-		const csv_parser = require('csv-streamify')({ columns : true, objectMode : true });
-		const f = fs.createReadStream(datafile).pipe(csv_parser).pipe(filter);
+		fs.access(PREFIX + datafile, fs.constants.R_OK, (err) => {
+			if (err) {
+				console.log(`cacheing ${datafile}`);
+				const s3 = new aws.S3();
+				db = cloneable(s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream());
+				db.clone().pipe(fs.createWriteStream(PREFIX + datafile));
+				db.pipe(csv_parser).pipe(filter);
+			} else {
+				console.log(`cache hit ${datafile}`);
+				fs.createReadStream(PREFIX + datafile).pipe(csv_parser).pipe(filter);
+			}
+		})
+
 		filter.on('data', resolve);
-	} )
+	})
 }
 
 function getRoute(route_id) {
 	return new Promise((resolve, reject) => {
 		getEntityFromDb(
-			"tt/routes.txt", 
+			"routes.txt", 
 			filter({ objectMode : true }, function(chunk) { return chunk.route_id == route_id })
 		)
 			.then((route) => resolve(route.route_short_name))
@@ -89,7 +101,7 @@ function getRoute(route_id) {
 function getTrip(trip_id) {
 	return new Promise((resolve, reject) => {
 		getEntityFromDb(
-			"tt/trips.txt", 
+			"trips.txt", 
 			filter({ objectMode : true }, function(chunk) { return chunk.trip_id == trip_id })
 		)
 			.then((trip) => resolve(trip.trip_headsign))
@@ -99,7 +111,7 @@ function getTrip(trip_id) {
 function getStop(stop_id) {
 	return new Promise((resolve, reject) => {
 		getEntityFromDb(
-			"tt/stops.txt", 
+			"stops.txt", 
 			filter({ objectMode : true }, function(chunk) { return chunk.stop_id == stop_id })
 		)
 			.then((stop) => resolve(stop.stop_name))

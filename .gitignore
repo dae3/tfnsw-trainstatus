@@ -69,3 +69,7 @@ sydneytrains.zip
 
 # scratch
 scratch.txt
+
+# build artifacts
+*.zip
+dist/*

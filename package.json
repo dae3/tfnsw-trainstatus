@@ -8,6 +8,8 @@
 		"once": "babel-node src/app.js",
 		"serve": "node dist/app.js",
 		"build": "babel src --out-dir dist",
+		"aws-build": "rm -f src.zip && 7z a src.zip package.json buildspec.yml src/*.js && aws s3 cp src.zip s3://tfnsw-code/src.zip && aws codebuild start-build --project trainstatus",
+		"aws-deploy": "aws lambda update-function-code --function-name trainstatus --s3-bucket tfnsw-code --s3-key ts.zip",
 		"test": "mocha"
 	},
 	"repository": {
@@ -21,14 +23,18 @@
 	},
 	"homepage": "https://github.com/dae3/tfnsw-trainstatus#readme",
 	"dependencies": {
+		"aws-sdk": "^2.496.0",
+		"cloneable-readable": "^2.0.1",
 		"csv-streamify": "^4.0.0",
 		"dotenv": "^8.0.0",
 		"express": "^4.17.1",
 		"pbf": "^3.2.0",
 		"protocol-buffers-schema": "^3.3.2",
+		"q-i": "^2.0.1",
 		"request": "^2.88.0",
 		"request-promise-native": "^1.0.7",
 		"rxjs": "^6.5.2",
+		"stream-buffers": "^3.0.2",
 		"through2": "^3.0.1",
 		"through2-filter": "^3.0.0",
 		"through2-reduce": "^1.1.1"
@@ -40,7 +46,6 @@
 		"@babel/preset-env": "^7.5.5",
 		"mocha": "^6.1.4",
 		"nock": "^10.0.6",
-		"q-i": "^2.0.1",
 		"should": "^13.2.3",
 		"sinon": "^7.3.2"
 	}
