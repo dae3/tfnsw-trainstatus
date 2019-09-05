@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'tfnsw
+
+  tfnsw description goes here'
+Globals:
+  Function:
+    Timeout: 30
+Outputs:
+  trainstatus:
+    Description: API Gateway endpoint URL for Prod stage for trainstatus function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/
+  trainstatusFunction:
+    Description: trainstatus Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - trainstatusFunction
+      - Arn
+  trainstatusFunctionIamRole:
+    Description: Implicit IAM Role created for trainstatus function
+    Value:
+      Fn::GetAtt:
+      - trainstatusFunctionRole
+      - Arn
+Resources:
+  trainstatusFunction:
+    Properties:
+      CodeUri: trainstatusFunction
+      Events:
+        HelloWorld:
+          Properties:
+            Method: get
+            Path: /trainstatus
+          Type: Api
+      Handler: app.handler
+      Runtime: nodejs8.10
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

@@ -3,20 +3,20 @@ require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
 import { merge, from, timer } from 'rxjs';
-import { flatMap, filter, mapTo, map, mergeAll } from 'rxjs/operators';
+import { flatMap, filter, first, mapTo, map, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
 
-exports.handler = function(event, context, callback) {
-	// context.callbackWaitsForEmptyEventLoop = false
+exports.handler = async function(event, context) {
+
 	from(gtfs.getGTFSSchema()).subscribe(schema => {
-		const alerts = timer(100).pipe(
-			mapTo(from(gtfs.getTrainsStatus())),
-			mergeAll(),
-			map(raw => gtfs.parseGTFS(raw.body)),
-			map(cooked => schema.FeedMessage.read(cooked).entity),
-			mergeAll()
-		)
+		const alerts = 
+			from(gtfs.getTrainsStatus()).pipe(
+				mergeAll(),
+				map(raw => gtfs.parseGTFS(raw.body)),
+				map(cooked => schema.FeedMessage.read(cooked).entity),
+				mergeAll()
+			)
 
 		const user_all = merge(
 			alerts.pipe( filter(stop_filter('278210') ) ),
@@ -34,12 +34,10 @@ exports.handler = function(event, context, callback) {
 			alerts.pipe( filter(trip_filter('W579') ) )
 		);
 
-		alerts
-			.pipe( flatMap(alert_formatter) )
-			.subscribe(
-				r => callback(null, r),
-				err => console.log(err)
-			)
+		return alerts.pipe(
+			flatMap(alert_formatter),
+			flatMapTo( e => { return { 'body' : e } })
+			).first().toPromise();
 	})
 }
 
@@ -48,16 +46,16 @@ function alert_formatter(entity) {
 	return from(new Promise( function(resolve, reject) {
 		var entities = entity.alert.informed_entity.map(gtfs.getEntityName);
 		Promise.all(entities).then(ea => {
-				resolve(
-					{
-						'title' : entity.alert.header_text.translation[0].text + ' (' +
-							ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
-							.reduce((a,v,i)=>a+(i>0?', ':'')+v, '') + ')' ,
-						'message' : entity.alert.description_text.translation[0].text,
-						'link'  : entity.alert.url.translation[0].text
-					}
-				)
-			})
+			resolve(
+				{
+					'title' : entity.alert.header_text.translation[0].text + ' (' +
+					ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
+					.reduce((a,v,i)=>a+(i>0?', ':'')+v, '') + ')' ,
+					'message' : entity.alert.description_text.translation[0].text,
+					'link'  : entity.alert.url.translation[0].text
+				}
+			)
+		})
 	})
 	)
 }

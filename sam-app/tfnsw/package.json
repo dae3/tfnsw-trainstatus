@@ -4,10 +4,12 @@
 	"description": "",
 	"main": "app.js",
 	"scripts": {
-		"start": "nodemon --exec babel-node src/app.js",
+		"start": "nodemon --exec node ./node_modules/@babel/node/bin/babel-node.js src/app.js",
 		"once": "babel-node src/app.js",
 		"serve": "node dist/app.js",
 		"build": "babel src --out-dir dist",
+		"sam-start": "sam local start-api",
+		"sam-build": "node ./node_modules/@babel/cli/bin/babel.js src/*.js --out-dir . && pushd .. && sam build && popd",
 		"aws-build": "rm -f src.zip && 7z a src.zip package.json buildspec.yml src/*.js && aws s3 cp src.zip s3://tfnsw-code/src.zip && aws codebuild start-build --project trainstatus",
 		"aws-deploy": "aws lambda update-function-code --function-name trainstatus --s3-bucket tfnsw-code --s3-key ts.zip",
 		"test": "mocha"
@@ -44,6 +46,7 @@
 		"@babel/core": "^7.5.5",
 		"@babel/node": "^7.5.5",
 		"@babel/preset-env": "^7.5.5",
+		"babel-preset-aws-lambda": "^1.0.2",
 		"mocha": "^6.1.4",
 		"nock": "^10.0.6",
 		"should": "^13.2.3",
