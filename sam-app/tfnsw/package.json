@@ -4,7 +4,8 @@
 	"description": "",
 	"main": "app.js",
 	"scripts": {
-		"start": "nodemon --exec node ./node_modules/@babel/node/bin/babel-node.js src/app.js",
+		"start": "nodemon --exec npx babel-node src/app.js", 
+		"debug": "nodemon --exec npx babel-node src/app.js --inspect=0.0.0.0",
 		"once": "babel-node src/app.js",
 		"serve": "node dist/app.js",
 		"build": "babel src --out-dir dist",

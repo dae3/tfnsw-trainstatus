@@ -47,8 +47,13 @@ const filtered_alerts = function(schema) {
 }
 
 gtfs.getGTFSSchema().then(schema => {
-  filtered_alerts(schema).pipe(map(alert_formatter)).subscribe(print);
+//   const fa = filtered_alerts(schema);
+//   const ffa = fa.pipe( map(alert_formatter), mergeAll() );
+//   ffa.subscribe(print);
+  filtered_alerts(schema).pipe(flatMap(alert_formatter)).subscribe(print);
 })
+
+function daf(entity) { return new Promise( (re, rej)=> { re(entity.alert.header_text.translation[0].text) }  )}
 
 // returns an Observable which emits an alert formatted as an object
 function alert_formatter(entity) {

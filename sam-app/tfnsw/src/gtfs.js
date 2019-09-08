@@ -1,4 +1,5 @@
 const https = require('https');
+const path = require('path');
 const proto = require('pbf');
 const protocomp = require('pbf/compile');
 const protoschema = require('protocol-buffers-schema');
@@ -9,6 +10,7 @@ const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
 const streambuf = require('stream-buffers');
 const cloneable = require('cloneable-readable');
+const csv_parser = require('csv-streamify');
 
 function getGTFSSchema() {
   return new Promise((resolve, reject) => {
@@ -69,27 +71,23 @@ function getEntity(gtfs_entity) {
 }
 
 function getEntityFromDb(datafile, filter, callback) {
-	// TODO pull csv-streamify require to global scope
-  const PREFIX = process.env.TEMP + '/'
-	var db;
-	const csv_parser = require('csv-streamify')({ columns : true, objectMode : true });
-
-	return new Promise( function(resolve, reject) {
-		fs.access(PREFIX + datafile, fs.constants.R_OK, (err) => {
-			if (err) {
-        console.log(`cacheing ${datafile} in ${PREFIX + datafile}`);
-				const s3 = new aws.S3();
-				db = cloneable(s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream());
-				db.clone().pipe(fs.createWriteStream(PREFIX + datafile));
-				db.pipe(csv_parser).pipe(filter);
-			} else {
-        console.log(`cache hit ${datafile}`);
-				fs.createReadStream(PREFIX + datafile).pipe(csv_parser).pipe(filter);
-			}
-		})
-
-		filter.on('data', resolve);
-	})
+  return new Promise( function(resolve, reject) {
+    const cachefile = path.format({dir: process.env.TEMP, name: datafile});
+    const parser = csv_parser({ columns : true, objectMode : true });
+    fs.open(cachefile, (err, fd) => {
+      if (!err) {
+        console.log(`cache hit for ${datafile} in ${cachefile}`);
+        fs.createReadStream('', { fd: fd }).pipe(parser).pipe(filter);
+      } else {
+        console.log(`cacheing ${datafile} in ${cachefile}`);
+        const s3 = new aws.S3();
+        var db = s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream();
+        db.on('end', () => { fs.createReadStream(cachefile).pipe(parser).pipe(filter) })
+        db.pipe(fs.createWriteStream(cachefile));
+      }
+      filter.on('data', resolve);
+    })
+  })
 }
 
 function getRoute(route_id) {
