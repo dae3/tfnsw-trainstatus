@@ -1,4 +1,5 @@
 const https = require('https');
+const through2 = require('through2');
 const path = require('path');
 const proto = require('pbf');
 const protocomp = require('pbf/compile');
@@ -8,9 +9,9 @@ const fs = require('fs');
 const filter = require('through2-filter');
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
-const streambuf = require('stream-buffers');
-const cloneable = require('cloneable-readable');
 const csv_parser = require('csv-streamify');
+const StreamCatcher = require('stream-catcher');
+const cache = new StreamCatcher();
 
 function getGTFSSchema() {
   return new Promise((resolve, reject) => {
@@ -70,24 +71,24 @@ function getEntity(gtfs_entity) {
 	}
 }
 
-function getEntityFromDb(datafile, filter, callback) {
-  return new Promise( function(resolve, reject) {
-    const cachefile = path.format({dir: process.env.TEMP, name: datafile});
-    const parser = csv_parser({ columns : true, objectMode : true });
-    fs.open(cachefile, (err, fd) => {
-      if (!err) {
-        console.log(`cache hit for ${datafile} in ${cachefile}`);
-        fs.createReadStream('', { fd: fd }).pipe(parser).pipe(filter);
-      } else {
-        console.log(`cacheing ${datafile} in ${cachefile}`);
-        const s3 = new aws.S3();
-        var db = s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream();
-        db.on('end', () => { fs.createReadStream(cachefile).pipe(parser).pipe(filter) })
-        db.pipe(fs.createWriteStream(cachefile));
-      }
-      filter.on('data', resolve);
-    })
-  })
+
+function getEntityFromDb(datafile, filter) {
+	const s3 = new aws.S3();
+
+	return new Promise((resolve, reject) =>
+		{
+			const parser = csv_parser({ columns : true, objectMode : true });
+			parser.pipe(filter);
+			filter.on('data', resolve);
+
+			cache.write(datafile, parser, () => {
+				const s3s = s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream();
+				// StreamCatcher will add as many listeners to this stream as their are cache clients
+				// High end number observed is an event affecting 20-30 stations
+				s3s.setMaxListeners(50);
+				cache.read(datafile, s3s);
+			})
+	})
 }
 
 function getRoute(route_id) {

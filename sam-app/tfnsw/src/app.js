@@ -29,6 +29,7 @@ const filtered_alerts = function(schema) {
       mergeAll(),
     )
 
+   return(alerts);
   return merge(
     alerts.pipe( filter(stop_filter('278210') ) ),
     alerts.pipe( filter(stop_filter('2782181') ) ),
@@ -46,11 +47,10 @@ const filtered_alerts = function(schema) {
   )
 }
 
+//process.on('warning', e => print(e.stack));
+
 gtfs.getGTFSSchema().then(schema => {
-//   const fa = filtered_alerts(schema);
-//   const ffa = fa.pipe( map(alert_formatter), mergeAll() );
-//   ffa.subscribe(print);
-  filtered_alerts(schema).pipe(flatMap(alert_formatter)).subscribe(print);
+  filtered_alerts(schema).pipe(map(alert_formatter), mergeAll()).subscribe(print);
 })
 
 function daf(entity) { return new Promise( (re, rej)=> { re(entity.alert.header_text.translation[0].text) }  )}
