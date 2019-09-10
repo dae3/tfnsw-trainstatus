@@ -1,4 +1,6 @@
 const https = require('https');
+const through2 = require('through2');
+const path = require('path');
 const proto = require('pbf');
 const protocomp = require('pbf/compile');
 const protoschema = require('protocol-buffers-schema');
@@ -7,10 +9,15 @@ const fs = require('fs');
 const filter = require('through2-filter');
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
-const streambuf = require('stream-buffers');
-const cloneable = require('cloneable-readable');
+const csv_parser = require('csv-streamify');
+const StreamCatcher = require('stream-catcher');
+const cache = new StreamCatcher();
 
 function getGTFSSchema() {
+  return new Promise((resolve, reject) => {
+    fs.readFile('./gtfs-realtime.proto', (err, content) => { resolve(protocomp(protoschema.parse(content))) })
+  });
+
 	return new Promise(function(resolve, reject) {
 		const s3 = new aws.S3();
 		s3.getObject({Bucket:'tfnsw-gtfs',Key:'gtfs-realtime.proto'}).promise()
@@ -64,27 +71,23 @@ function getEntity(gtfs_entity) {
 	}
 }
 
-function getEntityFromDb(datafile, filter, callback) {
-	// TODO pull csv-streamify require to global scope
-	const PREFIX = '/tmp/';
-	var db;
-	const csv_parser = require('csv-streamify')({ columns : true, objectMode : true });
 
-	return new Promise( function(resolve, reject) {
-		fs.access(PREFIX + datafile, fs.constants.R_OK, (err) => {
-			if (err) {
-				console.log(`cacheing ${datafile}`);
-				const s3 = new aws.S3();
-				db = cloneable(s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream());
-				db.clone().pipe(fs.createWriteStream(PREFIX + datafile));
-				db.pipe(csv_parser).pipe(filter);
-			} else {
-				console.log(`cache hit ${datafile}`);
-				fs.createReadStream(PREFIX + datafile).pipe(csv_parser).pipe(filter);
-			}
-		})
+function getEntityFromDb(datafile, filter) {
+	const s3 = new aws.S3();
 
-		filter.on('data', resolve);
+	return new Promise((resolve, reject) =>
+		{
+			const parser = csv_parser({ columns : true, objectMode : true });
+			parser.pipe(filter);
+			filter.on('data', resolve);
+
+			cache.write(datafile, parser, () => {
+				const s3s = s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream();
+				// StreamCatcher will add as many listeners to this stream as their are cache clients
+				// High end number observed is an event affecting 20-30 stations
+				s3s.setMaxListeners(50);
+				cache.read(datafile, s3s);
+			})
 	})
 }
 

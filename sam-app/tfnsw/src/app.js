@@ -3,7 +3,7 @@ require('dotenv').config();
 const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
 import { merge, from, timer } from 'rxjs';
-import { flatMap, filter, first, mapTo, map, tap, mergeAll, reduce } from 'rxjs/operators';
+import { count, flatMap, filter, first, mapTo, map, tap, mergeAll, reduce } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
 
@@ -29,8 +29,9 @@ const filtered_alerts = function(schema) {
       mergeAll(),
     )
 
-   return(alerts);
-  return merge(
+	//alerts.pipe(count()).subscribe(num => console.log(`${num} total alerts`));
+
+  const f_alerts = merge(
     alerts.pipe( filter(stop_filter('278210') ) ),
     alerts.pipe( filter(stop_filter('2782181') ) ),
     alerts.pipe( filter(stop_filter('2782182') ) ),
@@ -44,22 +45,22 @@ const filtered_alerts = function(schema) {
     alerts.pipe( filter(route_filter('WST_2d') ) ),
     alerts.pipe( filter(trip_filter('W512') ) ),
     alerts.pipe( filter(trip_filter('W579') ) )
-  )
+	);
+
+	return alerts;
 }
 
-//process.on('warning', e => print(e.stack));
-
 gtfs.getGTFSSchema().then(schema => {
-  filtered_alerts(schema).pipe(map(alert_formatter), mergeAll()).subscribe(print);
+	// filtered_alerts(schema).pipe(map(entity=>entity.alert.header_text.translation[0].text)).subscribe(print);
+	filtered_alerts(schema).pipe(map(alert_formatter), mergeAll()).subscribe(print);
 })
-
-function daf(entity) { return new Promise( (re, rej)=> { re(entity.alert.header_text.translation[0].text) }  )}
 
 // returns an Observable which emits an alert formatted as an object
 function alert_formatter(entity) {
   return from(new Promise( function(resolve, reject) {
     try
     {
+			print(entity.alert.informed_entity);
       var entities = entity.alert.informed_entity.map(gtfs.getEntityName);
       Promise.all(entities).then(ea => {
         resolve(
