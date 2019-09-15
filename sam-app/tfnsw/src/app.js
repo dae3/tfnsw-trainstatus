@@ -1,9 +1,8 @@
 'use strict';
 require('dotenv').config();
-const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
-import { merge, from, timer } from 'rxjs';
-import { count, flatMap, filter, first, mapTo, map, tap, mergeAll, reduce } from 'rxjs/operators';
+import { merge, from } from 'rxjs';
+import { first, filter, map, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
 
@@ -20,7 +19,6 @@ exports.handler = async function(event, context) {
   )
 }
 
-
 const filtered_alerts = function(schema) {
   const alerts = 
     from(gtfs.getTrainsStatus()).pipe(
@@ -28,8 +26,6 @@ const filtered_alerts = function(schema) {
       map(cooked => schema.FeedMessage.read(cooked).entity),
       mergeAll(),
     )
-
-	//alerts.pipe(count()).subscribe(num => console.log(`${num} total alerts`));
 
   const f_alerts = merge(
     alerts.pipe( filter(stop_filter('278210') ) ),
@@ -50,45 +46,31 @@ const filtered_alerts = function(schema) {
 	return alerts;
 }
 
+const sqs = new aws.SQS({ region: 'ap-southeast-2' });
+const outf = require('fs').createWriteStream('./events.json');
 gtfs.getGTFSSchema().then(schema => {
-	// filtered_alerts(schema).pipe(map(entity=>entity.alert.header_text.translation[0].text)).subscribe(print);
-	filtered_alerts(schema).pipe(map(alert_formatter), mergeAll()).subscribe(print);
+	filtered_alerts(schema).pipe(map(JSON.stringify), first()).subscribe(print);
+// 	sqs.getQueueUrl( { QueueName: 'tfnsw' } , (err, data) => {
+// 		if (err) { console.log(err) }
+// 		else
+// 		{
+// 			filtered_alerts(schema).subscribe(alert => {
+// 				sqs.sendMessage({
+// 					MessageBody: JSON.stringify(alert),
+// 					QueueUrl: data.QueueUrl
+// 				}, print)
+// 			})
+// 		}
+// 	})
 })
 
-// returns an Observable which emits an alert formatted as an object
-function alert_formatter(entity) {
-  return from(new Promise( function(resolve, reject) {
-    try
-    {
-			print(entity.alert.informed_entity);
-      var entities = entity.alert.informed_entity.map(gtfs.getEntityName);
-      Promise.all(entities).then(ea => {
-        resolve(
-          {
-            'title' : entity.alert.header_text.translation[0].text + ' (' +
-            ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
-            .reduce((a,v,i)=>a+(i>0?', ':'')+v, '') + ')' ,
-            'message' : entity.alert.description_text.translation[0].text,
-            'link'  : entity.alert.url.translation[0].text
-          }
-        )
-      })
-    } catch(e) { reject(e) }
-  })
-  )
-}
+function queueMessageCreator(alert, qurl) {
+	return {
+		QueueUrl: data.QueueUrl,
+					MessageBody: JSON.stringify(alert),
 
 
-function entity_id(entity) {
-  if (entity.trip) {
-    return entity.trip
-  } else if (entity.stop_id != '') {
-    return entity.stop_id
-  } else if (entity.route_id != '') {
-    return entity.route_id
-  } else {
-    return 'unknown'
-  }
+	}
 }
 
 function stop_filter(id) {
