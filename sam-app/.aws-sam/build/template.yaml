@@ -4,6 +4,7 @@ Description: 'tfnsw
   tfnsw description goes here'
 Globals:
   Function:
+    Runtime: nodejs8.10
     Timeout: 30
 Outputs:
   trainstatus:
@@ -26,13 +27,16 @@ Resources:
   trainstatusFunction:
     Properties:
       CodeUri: trainstatusFunction
-      Events:
-        HelloWorld:
-          Properties:
-            Method: get
-            Path: /trainstatus
-          Type: Api
       Handler: app.handler
-      Runtime: nodejs8.10
     Type: AWS::Serverless::Function
+    updateFromOpenDataHubFunction:
+      Properties:
+        CodeUri: updateFromOpenDataHub/
+        Handler: updateFromOpenDataHub.handler
+      Type: AWS::Serverless::Function
+    updateTopicsFromGTFSFunction:
+      Properties:
+        CodeUri: updateTopicsFromGTFS/
+        Handler: updateTopicsFromGTFS.handler
+      Type: AWS::Serverless::Function
 Transform: AWS::Serverless-2016-10-31

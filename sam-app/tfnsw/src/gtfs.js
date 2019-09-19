@@ -14,9 +14,9 @@ const StreamCatcher = require('stream-catcher');
 const cache = new StreamCatcher();
 
 function getGTFSSchema() {
-  return new Promise((resolve, reject) => {
-    fs.readFile('./gtfs-realtime.proto', (err, content) => { resolve(protocomp(protoschema.parse(content))) })
-  });
+//  return new Promise((resolve, reject) => {
+//    fs.readFile('./gtfs-realtime.proto', (err, content) => { resolve(protocomp(protoschema.parse(content))) })
+//  });
 
 	return new Promise(function(resolve, reject) {
 		const s3 = new aws.S3();

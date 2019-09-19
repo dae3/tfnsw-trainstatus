@@ -9,20 +9,26 @@ Description:
 Globals:
   Function:
     Timeout: 30
+    Runtime: nodejs8.10
 
 Resources:
   trainstatusFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function 
     Properties:
       CodeUri: tfnsw/
       Handler: app.handler
-      Runtime: nodejs8.10
-      Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /trainstatus
-            Method: get
+
+    updateFromOpenDataHubFunction:
+      Type: AWS::Serverless::Function
+      Properties:
+        CodeUri: updateFromOpenDataHub/
+        Handler: updateFromOpenDataHub.handler
+
+    updateTopicsFromGTFSFunction:
+      Type: AWS::Serverless::Function
+      Properties:
+        CodeUri: updateTopicsFromGTFS/
+        Handler: updateTopicsFromGTFS.handler
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

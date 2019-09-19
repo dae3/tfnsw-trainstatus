@@ -1,102 +1,60 @@
 'use strict';
 require('dotenv').config();
-const request = require('request-promise-native');
 const gtfs = require('./gtfs.js');
-import { merge, from, timer } from 'rxjs';
-import { count, flatMap, filter, first, mapTo, map, tap, mergeAll, reduce } from 'rxjs/operators';
+import { merge, from } from 'rxjs';
+import { tap, first, filter, map, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
+const sqs = new aws.SQS( { region : 'ap-southeast-2' });
+
 
 exports.handler = async function(event, context) {
-  var response = [];
-
-  filtered_alerts().subscribe(
-    response.push,
-    () => {
-      return new Promise((resolve, reject) => {
-        resolve(null, { 'body' : response })
-      })
-    },
-  )
+	try 
+	{
+		const schema = await gtfs.getGTFSSchema();
+		const qurl = await sqs.getQueueUrl( { QueueName: 'tfnsw' }).promise();
+		print(qurl);
+		filtered_alerts(schema).pipe(map(JSON.stringify)).subscribe(alert =>
+			sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl.QueueUrl } )
+		);
+	} catch (err) {
+		print(err)
+	}
 }
 
-
 const filtered_alerts = function(schema) {
-  const alerts = 
-    from(gtfs.getTrainsStatus()).pipe(
-      map(raw => gtfs.parseGTFS(raw.body)),
-      map(cooked => schema.FeedMessage.read(cooked).entity),
-      mergeAll(),
-    )
+	const alerts = 
+		from(gtfs.getTrainsStatus()).pipe(
+			map(raw => gtfs.parseGTFS(raw.body)),
+			map(cooked => schema.FeedMessage.read(cooked).entity),
+			mergeAll(),
+		)
 
-	//alerts.pipe(count()).subscribe(num => console.log(`${num} total alerts`));
-
-  const f_alerts = merge(
-    alerts.pipe( filter(stop_filter('278210') ) ),
-    alerts.pipe( filter(stop_filter('2782181') ) ),
-    alerts.pipe( filter(stop_filter('2782182') ) ),
-    alerts.pipe( filter(stop_filter('200060') ) ),
-    alerts.pipe( filter(stop_filter('206520') ) ),
-    alerts.pipe( filter(route_filter('BMT_1') ) ),
-    alerts.pipe( filter(route_filter('BMT_2') ) ),
-    alerts.pipe( filter(route_filter('WST_1a') ) ),
-    alerts.pipe( filter(route_filter('WST_1b') ) ),
-    alerts.pipe( filter(route_filter('WST_2c') ) ),
-    alerts.pipe( filter(route_filter('WST_2d') ) ),
-    alerts.pipe( filter(trip_filter('W512') ) ),
-    alerts.pipe( filter(trip_filter('W579') ) )
+	const f_alerts = merge(
+		alerts.pipe( filter(stop_filter('278210') ) ),
+		alerts.pipe( filter(stop_filter('2782181') ) ),
+		alerts.pipe( filter(stop_filter('2782182') ) ),
+		alerts.pipe( filter(stop_filter('200060') ) ),
+		alerts.pipe( filter(stop_filter('206520') ) ),
+		alerts.pipe( filter(route_filter('BMT_1') ) ),
+		alerts.pipe( filter(route_filter('BMT_2') ) ),
+		alerts.pipe( filter(route_filter('WST_1a') ) ),
+		alerts.pipe( filter(route_filter('WST_1b') ) ),
+		alerts.pipe( filter(route_filter('WST_2c') ) ),
+		alerts.pipe( filter(route_filter('WST_2d') ) ),
+		alerts.pipe( filter(trip_filter('W512') ) ),
+		alerts.pipe( filter(trip_filter('W579') ) )
 	);
 
 	return alerts;
 }
 
-gtfs.getGTFSSchema().then(schema => {
-	// filtered_alerts(schema).pipe(map(entity=>entity.alert.header_text.translation[0].text)).subscribe(print);
-	filtered_alerts(schema).pipe(map(alert_formatter), mergeAll()).subscribe(print);
-})
-
-// returns an Observable which emits an alert formatted as an object
-function alert_formatter(entity) {
-  return from(new Promise( function(resolve, reject) {
-    try
-    {
-			print(entity.alert.informed_entity);
-      var entities = entity.alert.informed_entity.map(gtfs.getEntityName);
-      Promise.all(entities).then(ea => {
-        resolve(
-          {
-            'title' : entity.alert.header_text.translation[0].text + ' (' +
-            ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e))
-            .reduce((a,v,i)=>a+(i>0?', ':'')+v, '') + ')' ,
-            'message' : entity.alert.description_text.translation[0].text,
-            'link'  : entity.alert.url.translation[0].text
-          }
-        )
-      })
-    } catch(e) { reject(e) }
-  })
-  )
-}
-
-
-function entity_id(entity) {
-  if (entity.trip) {
-    return entity.trip
-  } else if (entity.stop_id != '') {
-    return entity.stop_id
-  } else if (entity.route_id != '') {
-    return entity.route_id
-  } else {
-    return 'unknown'
-  }
-}
-
 function stop_filter(id) {
-  return (entity) => entity.alert.informed_entity.map(i=>i.stop_id).includes(id)
+	return (entity) => entity.alert.informed_entity.map(i=>i.stop_id).includes(id)
 }
 function route_filter(id) {
-  return (entity) => entity.alert.informed_entity.map(i=>i.route_id).includes(id)
+	return (entity) => entity.alert.informed_entity.map(i=>i.route_id).includes(id)
 }
 function trip_filter(id) {
-  return (entity) => entity.alert.informed_entity.trip && entity.alert.informed_entity.map(i=>i.trip.trip_id.slice(0, trip_id.indexOf('.')-1)).includes(id)
+	return (entity) => entity.alert.informed_entity.trip && entity.alert.informed_entity.map(i=>i.trip.trip_id.slice(0, trip_id.indexOf('.')-1)).includes(id)
 }

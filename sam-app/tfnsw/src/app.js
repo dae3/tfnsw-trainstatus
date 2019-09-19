@@ -2,21 +2,27 @@
 require('dotenv').config();
 const gtfs = require('./gtfs.js');
 import { merge, from } from 'rxjs';
-import { first, filter, map, mergeAll } from 'rxjs/operators';
+import { tap, first, filter, map, mergeAll } from 'rxjs/operators';
 const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
+const sqs = new aws.SQS( { region : 'ap-southeast-2' });
 
 exports.handler = async function(event, context) {
-  var response = [];
-
-  filtered_alerts().subscribe(
-    response.push,
-    () => {
-      return new Promise((resolve, reject) => {
-        resolve(null, { 'body' : response })
-      })
-    },
-  )
+  try 
+  {
+    const schema = await gtfs.getGTFSSchema();
+    const qurl = await sqs.getQueueUrl( { QueueName: 'tfnsw' }).promise();
+    filtered_alerts(schema).pipe(map(JSON.stringify)).subscribe(alert =>
+      {
+        print(alert);
+        sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl.QueueUrl } )
+          .promise().then(print)
+          .catch(print);
+      }
+    );
+  } catch (err) {
+    print(err)
+  }
 }
 
 const filtered_alerts = function(schema) {
@@ -41,36 +47,9 @@ const filtered_alerts = function(schema) {
     alerts.pipe( filter(route_filter('WST_2d') ) ),
     alerts.pipe( filter(trip_filter('W512') ) ),
     alerts.pipe( filter(trip_filter('W579') ) )
-	);
+  );
 
-	return alerts;
-}
-
-const sqs = new aws.SQS({ region: 'ap-southeast-2' });
-const outf = require('fs').createWriteStream('./events.json');
-gtfs.getGTFSSchema().then(schema => {
-	filtered_alerts(schema).pipe(map(JSON.stringify), first()).subscribe(print);
-// 	sqs.getQueueUrl( { QueueName: 'tfnsw' } , (err, data) => {
-// 		if (err) { console.log(err) }
-// 		else
-// 		{
-// 			filtered_alerts(schema).subscribe(alert => {
-// 				sqs.sendMessage({
-// 					MessageBody: JSON.stringify(alert),
-// 					QueueUrl: data.QueueUrl
-// 				}, print)
-// 			})
-// 		}
-// 	})
-})
-
-function queueMessageCreator(alert, qurl) {
-	return {
-		QueueUrl: data.QueueUrl,
-					MessageBody: JSON.stringify(alert),
-
-
-	}
+  return alerts;
 }
 
 function stop_filter(id) {
@@ -82,3 +61,5 @@ function route_filter(id) {
 function trip_filter(id) {
   return (entity) => entity.alert.informed_entity.trip && entity.alert.informed_entity.map(i=>i.trip.trip_id.slice(0, trip_id.indexOf('.')-1)).includes(id)
 }
+
+exports.handler()
