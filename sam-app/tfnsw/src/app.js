@@ -1,65 +1,47 @@
 'use strict';
 require('dotenv').config();
 const gtfs = require('./gtfs.js');
-import { merge, from } from 'rxjs';
-import { tap, first, filter, map, mergeAll } from 'rxjs/operators';
-const { print, stringify } = require('q-i');
+import { from, forkJoin, interval } from 'rxjs';
+import { concatMapTo, catchError, map, mergeAll, take, filter, tap } from 'rxjs/operators';
 const aws = require('aws-sdk');
 const sqs = new aws.SQS( { region : 'ap-southeast-2' });
 
-exports.handler = async function(event, context) {
-  try 
-  {
-    const schema = await gtfs.getGTFSSchema();
-    const qurl = await sqs.getQueueUrl( { QueueName: 'tfnsw' }).promise();
-    filtered_alerts(schema).pipe(map(JSON.stringify)).subscribe(alert =>
-      {
-        print(alert);
-        sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl.QueueUrl } )
-          .promise().then(print)
-          .catch(print);
-      }
-    );
-  } catch (err) {
-    print(err)
-  }
+exports.handler = function() {
+	const qurl = from(sqs.getQueueUrl( { QueueName: 'tfnsw' }).promise());
+	const schema = from(gtfs.getGTFSSchema());
+
+	const test_timer = interval(30000).pipe(take(1));
+	const prod_timer = interval(0, 1000 * 60 * 30).pipe( filter(function(x) {
+		const DoW = [1,2,3,4,5];
+		const HoD = [4,5,6,7,17,18,19,20];
+		const now = new Date();
+		return DoW.includes(now.getDay()) && HoD.includes(now.getHours())
+	})
+	)
+	const timer = interval(1).pipe(take(1));
+
+	forkJoin({ schema : schema, qurl : qurl }).subscribe( ({ schema, qurl }) => {
+		console.log('fj');
+		timer.pipe(
+			tap(console.log('t')),
+			concatMapTo(from(gtfs.getTrainsStatus())),
+			map(raw => gtfs.parseGTFS(raw.body)),
+			map(cooked => schema.FeedMessage.read(cooked).entity),
+			mergeAll(),
+			map(JSON.stringify),
+			map(alert => from(publishToQueue(alert, qurl.QueueUrl)) ),
+			tap(console.log('q')),
+			mergeAll(),
+			catchError(console.log)
+		).subscribe({
+			count : 0,
+			next(v) { this.count++; console.log('sub next') },
+			error() { console.log('sub error') },
+			complete() { console.log(`Pushed ${this.count} alerts to queue`) }
+		})
+	})
 }
 
-const filtered_alerts = function(schema) {
-  const alerts = 
-    from(gtfs.getTrainsStatus()).pipe(
-      map(raw => gtfs.parseGTFS(raw.body)),
-      map(cooked => schema.FeedMessage.read(cooked).entity),
-      mergeAll(),
-    )
+const publishToQueue = (alert, qurl) => sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl } ).promise();
 
-  const f_alerts = merge(
-    alerts.pipe( filter(stop_filter('278210') ) ),
-    alerts.pipe( filter(stop_filter('2782181') ) ),
-    alerts.pipe( filter(stop_filter('2782182') ) ),
-    alerts.pipe( filter(stop_filter('200060') ) ),
-    alerts.pipe( filter(stop_filter('206520') ) ),
-    alerts.pipe( filter(route_filter('BMT_1') ) ),
-    alerts.pipe( filter(route_filter('BMT_2') ) ),
-    alerts.pipe( filter(route_filter('WST_1a') ) ),
-    alerts.pipe( filter(route_filter('WST_1b') ) ),
-    alerts.pipe( filter(route_filter('WST_2c') ) ),
-    alerts.pipe( filter(route_filter('WST_2d') ) ),
-    alerts.pipe( filter(trip_filter('W512') ) ),
-    alerts.pipe( filter(trip_filter('W579') ) )
-  );
-
-  return alerts;
-}
-
-function stop_filter(id) {
-  return (entity) => entity.alert.informed_entity.map(i=>i.stop_id).includes(id)
-}
-function route_filter(id) {
-  return (entity) => entity.alert.informed_entity.map(i=>i.route_id).includes(id)
-}
-function trip_filter(id) {
-  return (entity) => entity.alert.informed_entity.trip && entity.alert.informed_entity.map(i=>i.trip.trip_id.slice(0, trip_id.indexOf('.')-1)).includes(id)
-}
-
-exports.handler()
+exports.handler();
