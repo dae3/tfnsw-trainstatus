@@ -28,7 +28,6 @@ function getGTFSSchema() {
 
 // returns a Promise that resolves to an encoded GTFS FeedMessage
 function getTrainsStatus() {
-	console.log('getTrainsStatus');
 		return request(
 			'https://api.transport.nsw.gov.au/v1/gtfs/alerts/sydneytrains',
 			{ 

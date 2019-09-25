@@ -7,6 +7,7 @@
 		"start": "npx nodemon --exec npx babel-node src/app.js",
 		"debug": "npx nodemon --exec npx babel-node src/app.js --inspect=0.0.0.0",
 		"once": "babel-node src/app.js",
+		"ponce": "babel-node pt.js",
 		"serve": "node dist/app.js",
 		"build": "babel src --out-dir dist",
 		"sam-start": "sam local start-api",
