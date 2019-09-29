@@ -38,9 +38,9 @@ exports.handler = function() {
       mergeAll(),
     ).subscribe(
       {
-				log : fs.createWriteStream('./tfnsw.log', { flags : 'a' }),
-        next(v) { console.log(v); this.log.write(v); },
-        error(v) { console.log(v); this.log.write(v); },
+        log : fs.createWriteStream('./tfnsw.log', { flags : 'a' }),
+        next(v) { console.log(v); this.log.write(v.toString()); },
+        error(v) { console.log(v); this.log.write(v.toString()); },
         complete() { this.log.end('done'); }
       }
     )

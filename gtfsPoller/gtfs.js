@@ -7,7 +7,6 @@ const protoschema = require('protocol-buffers-schema');
 const request = require('request-promise-native');
 const fs = require('fs');
 const filter = require('through2-filter');
-const { print, stringify } = require('q-i');
 const aws = require('aws-sdk');
 const csv_parser = require('csv-streamify');
 const StreamCatcher = require('stream-catcher');
