@@ -1,58 +1,39 @@
-// const proto = require('pbf');
-// const protocomp = require('pbf/compile');
-// const protoschema = require('protocol-buffers-schema');
-// const { print, stringify } = require('q-i');
+const jszip = require('jszip');
 const aws = require('aws-sdk');
-const zip = require('node-stream-zip');
-const https = require('https');
-const tempy = require('tempy');
-const fs = require('fs');
+const fetch = require('node-fetch');
 const s3 = new aws.S3();
 
 exports.handler = async (event) => {
-  console.log('start');
-  const response = await promisedReqStream(
-    'https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains'
-  );
-  console.log(response.statusCode);
+  const zip = new jszip();
+  const s3Uploads = [];
 
-  const zipfile = tempy.file({ extension : 'zip'});
-  response.pipe(fs.createWriteStream(zipfile));
-
-  var s3Uploads = [];
-  // slightly hacky approach to ensure at least 1 s3 upload gets added
-  //  to s3Uploads before the function falls through
-  s3Uploads.push(new Promise((resolve, reject) => { setTimeout(resolve, 2000) }));
-
-  response.on('end', () => {
-    const data = new zip({ file : zipfile });
-    data.on('entry', entry => {
-      console.log(entry.name);
-      const entryStream = data.stream(entry, (err, stream) =>
-        {
-          switch(entry.name) {
+  return new Promise((resolve, reject) => {
+    console.log('Fetching GTFS schedule data');
+    fetch('https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains', { headers : { 'Authorization' : `apikey ${process.env.TFNSW_API_KEY}` } })
+      .then(res => {
+        if (res.ok) {
+          return res.blob()
+        } else {
+          return Promise.reject(res.status)
+        }
+      })
+      .then(zip.loadAsync)
+      .then((gtfsdata) => {
+        console.log('Processing GTFS schedule data');
+        gtfsdata.forEach((relativePath, file) => {
+          switch(file.name) {
             case 'routes.txt':
             case 'trips.txt':
             case 'stops.txt':
-              s3Uploads.push(s3.upload( { Bucket : 'tfnsw-gtfs', Key : entry.name, Body : stream }).promise());
+              console.log(`Got schedule file ${file.name}`);
+              s3Uploads.push(s3.upload( { Bucket : 'tfnsw-gtfs', Key : entry.name, Body : file.nodeStream() }).promise());
               break;
             default:
               break;
           }
+          Promise.all(s3Uploads).then(resolve);
         })
-    })
-  })
-
-  const allUploadsPromise = Promise.all(s3Uploads);
-  console.log('end');
-  return allUploadsPromise;
-  //data.close();
-
-}
-
-function promisedReqStream(url) {
-  return new Promise((resolve, reject) => {
-    https.request(url, { headers : { "Authorization" : `apikey ${process.env.TFNSW_API_KEY}` }}, resolve).end();
+      })
+      .catch(err => reject(err));
   })
 }
-

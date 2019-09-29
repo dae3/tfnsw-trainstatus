@@ -1,6 +1,7 @@
 'use strict';
 require('dotenv').config();
 const gtfs = require('./gtfs.js');
+const fs = require('fs');
 import { from, forkJoin, timer } from 'rxjs';
 import { distinct, concatMapTo, catchError, map, mergeAll, take, filter, tap } from 'rxjs/operators';
 const { stringify, print } = require('q-i');
@@ -36,9 +37,14 @@ exports.handler = function() {
       map(JSON.stringify),
       map(alert => from(publishToQueue(alert, qurl.QueueUrl)) ),
       mergeAll(),
-      tap(print),
-      catchError(console.log)
-    ).subscribe(console.log)
+    ).subscribe(
+      {
+				log : fs.createWriteStream('./tfnsw.log', { flags : 'a' }),
+        next(v) { console.log(v); this.log.write(v); },
+        error(v) { console.log(v); this.log.write(v); },
+        complete() { this.log.end('done'); }
+      }
+    )
   })
 }
 
