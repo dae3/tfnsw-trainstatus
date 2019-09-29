@@ -1,0 +1,66 @@
+{
+    "LaunchTemplateData": {
+        "EbsOptimized": false,
+        "IamInstanceProfile": {
+            "Arn": "arn:aws:iam::717350670811:instance-profile/tfnsw-ec2"
+        },
+        "BlockDeviceMappings": [
+            {
+                "DeviceName": "/dev/xvda",
+                "Ebs": {
+                    "Encrypted": false,
+                    "DeleteOnTermination": true,
+                    "SnapshotId": "snap-0037fda5f14f34025",
+                    "VolumeSize": 8,
+                    "VolumeType": "gp2"
+                }
+            }
+        ],
+        "NetworkInterfaces": [
+            {
+                "AssociatePublicIpAddress": true,
+                "DeleteOnTermination": true,
+                "Description": "Primary network interface",
+                "DeviceIndex": 0,
+                "Groups": [
+                    "sg-0b996390f25ef6783"
+                ],
+                "InterfaceType": "interface",
+                "Ipv6Addresses": [],
+                "PrivateIpAddresses": [
+                    {
+                        "Primary": true,
+                        "PrivateIpAddress": "10.0.0.61"
+                    }
+                ],
+                "SubnetId": "subnet-0868c711ebf9d924d"
+            }
+        ],
+        "ImageId": "ami-03ed5bd63ba378bd8",
+        "InstanceType": "t2.micro",
+        "KeyName": "tfnsw-ec2",
+        "Monitoring": {
+            "Enabled": false
+        },
+        "Placement": {
+            "AvailabilityZone": "ap-southeast-2b",
+            "GroupName": "",
+            "Tenancy": "default"
+        },
+        "DisableApiTermination": false,
+        "InstanceInitiatedShutdownBehavior": "stop",
+        "CreditSpecification": {
+            "CpuCredits": "standard"
+        },
+        "CpuOptions": {
+            "CoreCount": 1,
+            "ThreadsPerCore": 1
+        },
+        "CapacityReservationSpecification": {
+            "CapacityReservationPreference": "open"
+        },
+        "HibernationOptions": {
+            "Configured": false
+        }
+    }
+}
