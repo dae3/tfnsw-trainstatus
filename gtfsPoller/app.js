@@ -4,7 +4,6 @@ const gtfs = require('./gtfs.js');
 const fs = require('fs');
 import { from, forkJoin, timer } from 'rxjs';
 import { distinct, concatMapTo, catchError, map, mergeAll, take, filter, tap } from 'rxjs/operators';
-const { stringify, print } = require('q-i');
 const aws = require('aws-sdk');
 const sqs = new aws.SQS( { region : 'ap-southeast-2' });
 
