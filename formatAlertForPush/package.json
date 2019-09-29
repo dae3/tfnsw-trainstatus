@@ -12,7 +12,6 @@
     "aws-sdk": "^2.526.0",
     "csv-streamify": "^4.0.0",
     "stream-catcher": "^1.0.5",
-    "q-i": "^2.0.1",
     "through2-filter": "^3.0.0"
   }
 }
