@@ -1,0 +1,180 @@
+openapi: 3.0.0
+info:
+  title: TFNSW subscription management
+  contact: {}
+  version: '1.0'
+servers:
+- url: https://{defaultHost}
+  variables:
+    defaultHost:
+      default: www.example.com
+paths:
+  /subscription:
+    get:
+      tags:
+      - subscription
+      summary: Subscription_GET
+      operationId: SubscriptionGet
+      parameters: []
+      responses:
+        200:
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        401:
+          description: 'TODO: Add error message'
+      deprecated: false
+    post:
+      tags:
+      - subscription
+      summary: Subscription_POST
+      operationId: SubscriptionPost
+      parameters: []
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSubscription'
+        required: true
+      responses:
+        200:
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        401:
+          description: 'TODO: Add error message'
+      deprecated: false
+  /subscription/{id}:
+    get:
+      tags:
+      - subscription
+      summary: SubscriptionById_GET
+      operationId: SubscriptionbyidGet
+      parameters:
+      - name: id
+        in: path
+        description: ''
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        401:
+          description: 'TODO: Add error message'
+        404:
+          description: 'TODO: Add error message'
+      deprecated: false
+    delete:
+      tags:
+      - subscription
+      summary: SubscriptionById_DELETE
+      operationId: SubscriptionbyidDelete
+      parameters:
+      - name: id
+        in: path
+        description: ''
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: ''
+          headers: {}
+        401:
+          description: 'TODO: Add error message'
+        404:
+          description: 'TODO: Add error message'
+      deprecated: false
+    put:
+      tags:
+      - subscription
+      summary: SubscriptionById_PUT
+      operationId: SubscriptionbyidPut
+      parameters:
+      - name: id
+        in: path
+        description: ''
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        401:
+          description: 'TODO: Add error message'
+        404:
+          description: 'TODO: Add error message'
+      deprecated: false
+components:
+  schemas:
+    Subscription:
+      title: Subscription
+      required:
+      - type
+      - topic
+      - targetType
+      - target
+      - id
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/type'
+        topic:
+          type: string
+        targetType:
+          type: string
+        target:
+          type: string
+        id:
+          type: string
+    NewSubscription:
+      title: NewSubscription
+      required:
+      - type
+      - topic
+      - targetType
+      - target
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/type'
+        topic:
+          type: string
+        targetType:
+          type: string
+        target:
+          type: string
+    type:
+      title: type
+      enum:
+      - route
+      - trip
+      - stop
+      type: string
+tags:
+- name: subscription
+  description: ''
