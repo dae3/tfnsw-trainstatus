@@ -28,7 +28,7 @@
 | Read S3 GTFS data       |                  |         | x           |             |             |
 | Write S3 GTFS data      |                  |         |             | x           |             |
 | Update Lambdas          | X                |         |             |             |             |
-| Write to CloudWatch     |x                  | X       | x           | x           | x           |
+| Write to CloudWatch     | x                | X       | x           | x           | x           |
 | Write to input queue    |                  | X       |             |             |             |
 | Read from input queue   |                  |         | x           |             |             |
 | Remove from input queue |                  |         | x           |             |             |
