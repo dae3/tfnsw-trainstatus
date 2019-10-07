@@ -9,7 +9,7 @@ yum install nodejs -y
 # CloudWatch agent
 curl -L https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o $${TMP}/cwa.rpm && \
   rpm -U $${TMP}/cwa.rpm && rm -f $${TMP}/cwa.rpm
-cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOF
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
 {
 	"agent": {
 		"metrics_collection_interval": 60,
@@ -29,16 +29,7 @@ cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOF
 		}
 	},
 	"metrics": {
-		"append_dimensions": {
-			"AutoScalingGroupName": "$${aws:AutoScalingGroupName}",
-			"ImageId": "$${aws:ImageId}",
-			"InstanceId": "$${aws:InstanceId}",
-			"InstanceType": "$${aws:InstanceType}"
-		},
 		"metrics_collected": {
-			"collectd": {
-				"metrics_aggregation_interval": 60
-			},
 			"disk": {
 				"measurement": [
 					"used_percent"
@@ -64,6 +55,8 @@ cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOF
 }
 
 EOF
+
+systemctl enable amazon-cloudwatch-agent && systemctl start amazon-cloudwatch-agent
 
 # utilities
 yum install tmux -y
