@@ -7,8 +7,8 @@ curl -sL https://rpm.nodesource.com/setup_10.x | bash -
 yum install nodejs -y
 
 # CloudWatch agent
-curl -L https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o ${TMP}/cwa.rpm && \
-  rpm -U ${TMP}/cwa.rpm && rm -f ${TMP}/cwa.rpm
+curl -L https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o $${TMP}/cwa.rpm && \
+  rpm -U $${TMP}/cwa.rpm && rm -f $${TMP}/cwa.rpm
 cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOF
 {
 	"agent": {
@@ -21,7 +21,7 @@ cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOF
 				"collect_list": [
 					{
 						"file_path": "/home/ec2-user/tfnsw/tfnsw.log",
-						"log_group_name": "tfnsw.log",
+						"log_group_name": "${log_group_name}",
 						"log_stream_name": "{instance_id}"
 					}
 				]
@@ -30,10 +30,10 @@ cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOF
 	},
 	"metrics": {
 		"append_dimensions": {
-			"AutoScalingGroupName": "${aws:AutoScalingGroupName}",
-			"ImageId": "${aws:ImageId}",
-			"InstanceId": "${aws:InstanceId}",
-			"InstanceType": "${aws:InstanceType}"
+			"AutoScalingGroupName": "$${aws:AutoScalingGroupName}",
+			"ImageId": "$${aws:ImageId}",
+			"InstanceId": "$${aws:InstanceId}",
+			"InstanceType": "$${aws:InstanceType}"
 		},
 		"metrics_collected": {
 			"collectd": {

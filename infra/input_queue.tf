@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "input_queue" {
   }
 }
 
-resource "aws_iam_policy" "input_queue" {
+resource "aws_iam_policy" "publish_to_input_queue" {
   name        = "${var.prefix}-${var.environment}-publish_to_input_queue"
   description = "Allow publishing of alerts to the input queue"
   policy      = data.aws_iam_policy_document.input_queue.json
