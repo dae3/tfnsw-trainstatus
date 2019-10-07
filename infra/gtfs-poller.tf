@@ -7,6 +7,8 @@ data "aws_ami" "amazon_linux" {
   }
 
   owners = ["137112412989"]
+
+  tags = local.common_tags
 }
 
 resource "aws_instance" "gtfs_poller" {
@@ -19,10 +21,12 @@ resource "aws_instance" "gtfs_poller" {
   vpc_security_group_ids = [ aws_security_group.gtfs_poller.id ]
   depends_on = [ aws_internet_gateway.gtfs_poller ]
   iam_instance_profile = aws_iam_instance_profile.gtfs_poller.id
+  tags = local.common_tags
 }
 
 resource "aws_vpc" "gtfs_poller" {
   cidr_block = "10.0.0.0/24"
+  tags = local.common_tags
 }
 
 resource "aws_network_acl" "gtfs_poller" {
@@ -45,11 +49,13 @@ resource "aws_network_acl" "gtfs_poller" {
     from_port = 0
     to_port   = 0
   }
+  tags = local.common_tags
 }
 
 resource "aws_subnet" "gtfs_poller" {
   vpc_id = aws_vpc.gtfs_poller.id
   cidr_block = "10.0.0.0/24"
+  tags = local.common_tags
 }
 
 resource "aws_security_group" "gtfs_poller" {
@@ -71,10 +77,12 @@ resource "aws_security_group" "gtfs_poller" {
     protocol = "-1"
   }
 
+  tags = local.common_tags
 }
 
 resource "aws_internet_gateway" "gtfs_poller" {
   vpc_id = aws_vpc.gtfs_poller.id
+  tags = local.common_tags
 }
 
 resource "aws_route_table" "gtfs_poller" {
@@ -84,6 +92,7 @@ resource "aws_route_table" "gtfs_poller" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.gtfs_poller.id
   }
+  tags = local.common_tags
 }
 
 resource "aws_route_table_association" "gtfs_poller" {
@@ -110,6 +119,7 @@ data "aws_iam_policy_document" "instance_assume_role_policy" {
 resource "aws_iam_role" "gtfs_poller" {
   name =  "${var.prefix}-${var.environment}-gtfs_poller"
   assume_role_policy = data.aws_iam_policy_document.instance_assume_role_policy.json
+  tags = local.common_tags
 }
 
 resource "aws_iam_instance_profile" "gtfs_poller" {

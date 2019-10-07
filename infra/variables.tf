@@ -10,3 +10,9 @@ variable "prefix" {
   default = "tfnsw"
 }
 
+locals {
+  common_tags = {
+    Product     = var.prefix
+    Environment = var.environment
+  }
+}

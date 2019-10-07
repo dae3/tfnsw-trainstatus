@@ -1,9 +1,3 @@
-locals {
-  common_tags = {
-    Product     = var.prefix
-    Environment = var.environment
-  }
-}
 
 resource "aws_sqs_queue" "input_queue" {
   name                      = "${var.prefix}-${var.environment}-input_queue"
