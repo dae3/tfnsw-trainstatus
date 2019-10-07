@@ -10,6 +10,11 @@ variable "prefix" {
   default = "tfnsw"
 }
 
+data "aws_caller_identity" "main" {}
+data "aws_arn" "account_id" {
+  arn = data.aws_caller_identity.main.arn
+}
+
 locals {
   common_tags = {
     Product     = var.prefix
