@@ -60,7 +60,7 @@ resource "aws_subnet" "gtfs_poller" {
 
 resource "aws_security_group" "gtfs_poller" {
   vpc_id      = aws_vpc.gtfs_poller.id
-  name        = "gtfs_poller"
+  name        = "${var.prefix}-${var.environment}-gtfs_poller"
   description = "Allow inbound SSH"
 
   ingress {
@@ -135,4 +135,9 @@ resource "aws_iam_role_policy_attachment" "gtfs_poller_logs" {
 resource "aws_iam_role_policy_attachment" "gtfs_poller_inputqueue" {
   role = aws_iam_role.gtfs_poller.id
   policy_arn = aws_iam_policy.publish_to_input_queue.arn
+}
+
+resource "aws_iam_role_policy_attachment" "gtfs_poller_cloudwatchagent" {
+  role = aws_iam_role.gtfs_poller.id
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }

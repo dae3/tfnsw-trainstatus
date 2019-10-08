@@ -58,6 +58,11 @@ EOF
 
 systemctl enable amazon-cloudwatch-agent && systemctl start amazon-cloudwatch-agent
 
+# cloudwatch agent access to logs
+mkdir /home/ec2-user/tfnsw && chown ec2-user.cwagent /home/ec2-user/tfnsw && touch /home/ec2-user/tfnsw/tfnsw.log && \
+chown ec2-user.cwagent /home/ec2-user/tfnsw/tfnsw.log && chgrp cwagent /home/ec2-user && chmod g+x /home/ec2-user && chmod g+x /home/ec2-user/tfnsw && \
+chmod g+r /home/ec2-user/tfnsw/tfnsw.log
+
 # utilities
 yum install tmux -y
 
