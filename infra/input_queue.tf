@@ -31,3 +31,21 @@ resource "aws_iam_policy" "publish_to_input_queue" {
   description = "Allow publishing of alerts to the input queue"
   policy      = data.aws_iam_policy_document.input_queue.json
 }
+
+data "aws_iam_policy_document" "consume_input_queue" {
+  statement {
+    actions = [
+      "sqs:DeleteMessage",
+      "sqs:GetQueueUrl",
+      "sqs:ListDeadLetterSourceQueues",
+      "sqs:ReceiveMessage",
+      "sqs:GetQueueAttributes",
+    ]
+    resources = [aws_sqs_queue.input_queue.arn]
+  }
+}
+
+resource "aws_iam_policy" "consume_input_queue" {
+  name        = "${var.prefix}-${var.environment}-consume_input_queue"
+  policy      = data.aws_iam_policy_document.consume_input_queue.json
+}
