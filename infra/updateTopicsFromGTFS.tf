@@ -40,3 +40,21 @@ resource "aws_iam_role_policy_attachment" "updateTopicsFromGTFS_sns" {
   role       = aws_iam_role.updateTopicsFromGTFS.id
   policy_arn = aws_iam_policy.update_notificationtopics.arn
 }
+
+resource "aws_lambda_permission" "trigger_from_s3" {
+  action = "lambda:InvokeFunction"
+  principal = "s3.amazonaws.com"
+  function_name = aws_lambda_function.updateTopicsFromGTFS.function_name
+  source_arn = aws_s3_bucket.gtfs.arn
+}
+
+resource "aws_s3_bucket_notification" "gtfs_change" {
+  bucket = aws_s3_bucket.gtfs.bucket
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.updateTopicsFromGTFS.arn
+    events = [ "s3:ObjectCreated:*" ]
+    filter_suffix = "*.txt"
+  }
+}
+
