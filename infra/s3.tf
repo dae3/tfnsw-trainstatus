@@ -1,6 +1,7 @@
 resource "aws_s3_bucket" "gtfs" {
-  bucket = "${var.prefix}-${var.environment}-gtfs"
-  acl    = "private"
+  bucket       = "${var.prefix}-${var.environment}-gtfs"
+  acl          = "private"
+  force_destroy = true
 
   tags = local.common_tags
 }
@@ -9,6 +10,7 @@ resource "aws_s3_bucket" "code" {
   bucket = "${var.prefix}-${var.environment}-code"
   acl    = "private"
   versioning { enabled = true }
+  force_destroy = true
 
   tags = local.common_tags
 }
