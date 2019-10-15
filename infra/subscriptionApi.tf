@@ -39,3 +39,8 @@ resource "aws_iam_role_policy_attachment" "subscriptionApi_logs" {
   policy_arn = aws_iam_policy.cloudwatch_writelogs.arn
 }
 
+resource "aws_iam_role_policy_attachment" "subscriptionApi_sns" {
+  role       = aws_iam_role.subscriptionApi.id
+  policy_arn = aws_iam_policy.list_subscriptions.arn
+}
+

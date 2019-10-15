@@ -31,7 +31,7 @@ resource "aws_iam_policy" "update_notificationtopics" {
 data "aws_iam_policy_document" "list_subscriptions" {
   statement {
     actions   = ["sns:ListSubscriptions"]
-    resources = local.all_sns_resources
+    resources = ["arn:aws:sns:${var.region}:${data.aws_arn.account_id.account}:*"]
   }
 }
 
