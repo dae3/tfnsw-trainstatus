@@ -2,10 +2,9 @@
   "swagger": "2.0",
   "info": {
     "version": "1.0",
-    "title": "TFNSW subscription management",
+    "title": "${environment} - TFNSW subscription management",
     "contact": {}
   },
-  "host": "www.example.com",
   "basePath": "/",
   "schemes": [
     "https"
@@ -19,7 +18,7 @@
   "paths": {
     "/subscription": {
       "get": {
-        "summary": "Subscription_GET",
+        "summary": "Get all Subscriptions",
         "tags": [
           "subscription"
         ],
@@ -46,7 +45,7 @@
     },
     "/subscription/{id}": {
       "get": {
-        "summary": "SubscriptionById_GET",
+        "summary": "Get a specific Subscription by ID",
         "tags": [
           "subscription"
         ],
@@ -83,7 +82,7 @@
         }
       },
       "post": {
-        "summary": "SubscriptionById_POST",
+        "summary": "Create a new Subscription",
         "tags": [
           "subscription"
         ],
@@ -125,7 +124,7 @@
         }
       },
       "delete": {
-        "summary": "SubscriptionById_DELETE",
+        "summary": "Delete a subscription by ID",
         "tags": [
           "subscription"
         ],
@@ -159,7 +158,7 @@
         }
       },
       "put": {
-        "summary": "SubscriptionById_PUT",
+        "summary": "Change a subscription by ID",
         "tags": [
           "subscription"
         ],
@@ -203,13 +202,12 @@
       "type": "object",
       "properties": {
         "type": {
-          "$ref": "#/definitions/type"
+          "$ref": "#/definitions/SubscriptionType"
         },
         "topic": {
           "type": "string"
         },
         "targetType": {
-          "example": "email",
           "type": "string",
           "default": "email"
         },
@@ -229,17 +227,16 @@
       ]
     },
     "NewSubscription": {
-      "title": "NewSubscription",
+      "title": "New Subscription",
       "type": "object",
       "properties": {
         "type": {
-          "$ref": "#/definitions/type"
+          "$ref": "#/definitions/SubscriptionType"
         },
         "topic": {
           "type": "string"
         },
         "targetType": {
-          "example": "email",
           "type": "string",
           "default": "email"
         },
@@ -254,9 +251,8 @@
         "target"
       ]
     },
-    "type": {
-      "title": "type",
-      "example": "route",
+    "SubscriptionType": {
+      "title": "SubscriptionType",
       "type": "string",
       "enum": [
         "route",

@@ -1,0 +1,9 @@
+{
+  "title": "SubscriptionType",
+  "type": "string",
+  "enum": [
+    "route",
+    "trip",
+    "stop"
+  ]
+}

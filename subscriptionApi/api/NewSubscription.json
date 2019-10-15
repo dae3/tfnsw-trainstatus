@@ -1,0 +1,25 @@
+{
+  "title": "New Subscription",
+  "type": "object",
+  "properties": {
+    "type": {
+      "$ref": "https://apigateway.amazonaws.com/restapis/${api_id}/models/SubscriptionType"
+    },
+    "topic": {
+      "type": "string"
+    },
+    "targetType": {
+      "type": "string",
+      "default": "email"
+    },
+    "target": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "topic",
+    "targetType",
+    "target"
+  ]
+}

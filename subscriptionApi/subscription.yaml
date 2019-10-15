@@ -1,180 +1,190 @@
-openapi: 3.0.0
+swagger: '2.0'
 info:
+  version: '1.0'
   title: TFNSW subscription management
   contact: {}
-  version: '1.0'
-servers:
-- url: https://{defaultHost}
-  variables:
-    defaultHost:
-      default: www.example.com
+basePath: /
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
 paths:
   /subscription:
     get:
+      summary: Get all Subscriptions
       tags:
-      - subscription
-      summary: Subscription_GET
+        - subscription
       operationId: SubscriptionGet
+      deprecated: false
+      produces:
+        - application/json
       parameters: []
       responses:
-        200:
+        '200':
           description: ''
+          schema:
+            $ref: '#/definitions/Subscription'
           headers: {}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        401:
+        '401':
           description: 'TODO: Add error message'
-      deprecated: false
-    post:
-      tags:
-      - subscription
-      summary: Subscription_POST
-      operationId: SubscriptionPost
-      parameters: []
-      requestBody:
-        description: ''
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewSubscription'
-        required: true
-      responses:
-        200:
-          description: ''
-          headers: {}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        401:
-          description: 'TODO: Add error message'
-      deprecated: false
-  /subscription/{id}:
+          schema: {}
+  '/subscription/{id}':
     get:
+      summary: Get a specific Subscription by ID
       tags:
-      - subscription
-      summary: SubscriptionById_GET
-      operationId: SubscriptionbyidGet
-      parameters:
-      - name: id
-        in: path
-        description: ''
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        200:
-          description: ''
-          headers: {}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        401:
-          description: 'TODO: Add error message'
-        404:
-          description: 'TODO: Add error message'
+        - subscription
+      operationId: SubscriptionByIdGet
       deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: ''
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Subscription'
+          headers: {}
+        '401':
+          description: 'TODO: Add error message'
+          schema: {}
+        '404':
+          description: 'TODO: Add error message'
+          schema: {}
+    post:
+      summary: Create a new Subscription
+      tags:
+        - subscription
+      operationId: SubscriptionByIdPost
+      deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: ''
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/NewSubscription'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Subscription'
+          headers: {}
+        '401':
+          description: 'TODO: Add error message'
+          schema: {}
     delete:
+      summary: Delete a subscription by ID
       tags:
-      - subscription
-      summary: SubscriptionById_DELETE
-      operationId: SubscriptionbyidDelete
+        - subscription
+      operationId: SubscriptionByIdDelete
+      deprecated: false
+      produces:
+        - application/json
       parameters:
-      - name: id
-        in: path
-        description: ''
-        required: true
-        style: simple
-        explode: false
-        schema:
+        - name: id
+          in: path
+          required: true
           type: string
+          description: ''
       responses:
-        200:
+        '200':
           description: ''
           headers: {}
-        401:
+        '401':
           description: 'TODO: Add error message'
-        404:
+          schema: {}
+        '404':
           description: 'TODO: Add error message'
-      deprecated: false
+          schema: {}
     put:
+      summary: Change a subscription by ID
       tags:
-      - subscription
-      summary: SubscriptionById_PUT
-      operationId: SubscriptionbyidPut
-      parameters:
-      - name: id
-        in: path
-        description: ''
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        200:
-          description: ''
-          headers: {}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        401:
-          description: 'TODO: Add error message'
-        404:
-          description: 'TODO: Add error message'
+        - subscription
+      operationId: SubscriptionByIdPut
       deprecated: false
-components:
-  schemas:
-    Subscription:
-      title: Subscription
-      required:
+      produces:
+        - application/json
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: ''
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Subscription'
+          headers: {}
+        '401':
+          description: 'TODO: Add error message'
+          schema: {}
+        '404':
+          description: 'TODO: Add error message'
+          schema: {}
+definitions:
+  Subscription:
+    title: Subscription
+    type: object
+    properties:
+      type:
+        $ref: '#/definitions/SubscriptionType'
+      topic:
+        type: string
+      targetType:
+        example: email
+        type: string
+        default: email
+      target:
+        type: string
+      id:
+        type: string
+    required:
       - type
       - topic
       - targetType
       - target
       - id
-      type: object
-      properties:
-        type:
-          $ref: '#/components/schemas/type'
-        topic:
-          type: string
-        targetType:
-          type: string
-        target:
-          type: string
-        id:
-          type: string
-    NewSubscription:
-      title: NewSubscription
-      required:
+  NewSubscription:
+    title: New Subscription
+    type: object
+    properties:
+      type:
+        $ref: '#/definitions/SubscriptionType'
+      topic:
+        type: string
+      targetType:
+        example: email
+        type: string
+        default: email
+      target:
+        type: string
+    required:
       - type
       - topic
       - targetType
       - target
-      type: object
-      properties:
-        type:
-          $ref: '#/components/schemas/type'
-        topic:
-          type: string
-        targetType:
-          type: string
-        target:
-          type: string
-    type:
-      title: type
-      enum:
+  SubscriptionType:
+    title: SubscriptionType
+    type: string
+    enum:
       - route
       - trip
       - stop
-      type: string
 tags:
-- name: subscription
-  description: ''
+  - name: subscription
+    description: ''
