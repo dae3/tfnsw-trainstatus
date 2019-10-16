@@ -54,7 +54,30 @@ resource "aws_api_gateway_method" "get_subscription" {
   authorization = "NONE"
 }
 
-# resource-method integration to implementations
+resource "aws_api_gateway_method" "post_subscription" {
+  rest_api_id   = aws_api_gateway_rest_api.subscription.id
+  resource_id   = aws_api_gateway_resource.subscription.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# GET /subscription response
+resource "aws_api_gateway_integration_response" "get_subscription_200" {
+  rest_api_id = aws_api_gateway_rest_api.subscription.id
+  resource_id = aws_api_gateway_resource.subscription.id
+  http_method = aws_api_gateway_method.get_subscription.http_method
+  status_code = 200
+
+}
+
+resource "aws_api_gateway_method_response" "get_subscription_200" {
+  rest_api_id     = aws_api_gateway_rest_api.subscription.id
+  resource_id     = aws_api_gateway_resource.subscription.id
+  http_method     = aws_api_gateway_method.get_subscription.http_method
+  status_code     = 200
+  response_models = { "application/json" = "${aws_api_gateway_model.subscriptionlist.name}" }
+}
+
 resource "aws_api_gateway_integration" "get_subscription" {
   rest_api_id = aws_api_gateway_rest_api.subscription.id
   resource_id = aws_api_gateway_resource.subscription.id
@@ -65,20 +88,39 @@ resource "aws_api_gateway_integration" "get_subscription" {
   uri                     = aws_lambda_function.subscriptionApi.invoke_arn
 }
 
-resource "aws_api_gateway_integration_response" "get_subscription_200" {
-  rest_api_id = aws_api_gateway_rest_api.subscription.id
-  resource_id = aws_api_gateway_resource.subscription.id
-  http_method = aws_api_gateway_method.get_subscription.http_method
-  status_code = 200
-
+# POST /subscription response
+# https://github.com/terraform-providers/terraform-provider-aws/issues/4001#issuecomment-540879169
+resource "null_resource" "method-delay" {
+  provisioner "local-exec" {
+    command = "sleep 5"
+  }
+  triggers = {
+    response = aws_api_gateway_resource.subscription.id
+  }
 }
 
-
-resource "aws_api_gateway_method_response" "get_subscription_200" {
+resource "aws_api_gateway_integration_response" "post_subscription_200" {
   rest_api_id = aws_api_gateway_rest_api.subscription.id
   resource_id = aws_api_gateway_resource.subscription.id
-  http_method = aws_api_gateway_method.get_subscription.http_method
+  http_method = aws_api_gateway_method.post_subscription.http_method
   status_code = 200
-  response_models = { "application/json" = "${aws_api_gateway_model.subscriptionlist.name}" }
+}
+
+resource "aws_api_gateway_method_response" "post_subscription_200" {
+  rest_api_id     = aws_api_gateway_rest_api.subscription.id
+  resource_id     = aws_api_gateway_resource.subscription.id
+  http_method     = aws_api_gateway_method.post_subscription.http_method
+  status_code     = 200
+  response_models = { "application/json" = "${aws_api_gateway_model.subscription.name}" }
+}
+
+resource "aws_api_gateway_integration" "post_subscription" {
+  rest_api_id = aws_api_gateway_rest_api.subscription.id
+  resource_id = aws_api_gateway_resource.subscription.id
+  http_method = aws_api_gateway_method.post_subscription.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.subscriptionApi.invoke_arn
 }
 
