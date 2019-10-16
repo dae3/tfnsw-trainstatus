@@ -19,12 +19,19 @@ data "aws_iam_policy_document" "subscriptionApi-assume" {
   }
 }
 
-# Directly attach permission for lambda invocation from API gateway
-resource "aws_lambda_permission" "subscriptionApi-apigw" {
+# Directly attach permissions for lambda invocation from API gateway
+resource "aws_lambda_permission" "subscriptionApi-apigw-get" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.subscriptionApi.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${var.region}:${data.aws_arn.account_id.account}:${aws_api_gateway_rest_api.subscription.id}/*/${aws_api_gateway_method.get_subscription.http_method}${aws_api_gateway_resource.subscription.path}"
+}
+
+resource "aws_lambda_permission" "subscriptionApi-apigw-post" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.subscriptionApi.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${var.region}:${data.aws_arn.account_id.account}:${aws_api_gateway_rest_api.subscription.id}/*/${aws_api_gateway_method.post_subscription.http_method}${aws_api_gateway_resource.subscription.path}"
 }
 
 resource "aws_iam_role" "subscriptionApi" {
