@@ -9,7 +9,7 @@ yum install nodejs -y
 # Deployment user
 useradd -m -N -g users deploy
 mkdir -p /home/deploy/.ssh
-cat > /home/deploy/.ssh/authorized_hosts <<KEY
+cat > /home/deploy/.ssh/authorized_keys <<KEY
 ${deploy_public_key}
 KEY
 chown -R deploy.users /home/deploy/.ssh

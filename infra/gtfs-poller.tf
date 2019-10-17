@@ -141,3 +141,8 @@ resource "aws_iam_role_policy_attachment" "gtfs_poller_cloudwatchagent" {
   role = aws_iam_role.gtfs_poller.id
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
+
+resource aws_iam_role_policy_attachment "gtfs_poller_gtfs_database" {
+	role = aws_iam_role.gtfs_poller.id
+	policy_arn = aws_iam_policy.read_s3_gtfs.arn
+}
