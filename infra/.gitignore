@@ -2,3 +2,4 @@
 .terraform*
 terraform*.backup
 terraform.tfstate
+tfnsw_deploy_id_rsa.pub

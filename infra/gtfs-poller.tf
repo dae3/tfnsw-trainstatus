@@ -17,7 +17,7 @@ resource "aws_instance" "gtfs_poller" {
   subnet_id                   = aws_subnet.gtfs_poller.id
   key_name                    = aws_key_pair.gtfs_poller.id
   associate_public_ip_address = true
-  user_data                   = templatefile("./gtfs-poller-startup.sh.tpl", { log_group_name = aws_cloudwatch_log_group.poller.name })
+  user_data                   = templatefile("./gtfs-poller-startup.sh.tpl", { log_group_name = aws_cloudwatch_log_group.poller.name, deploy_public_key = file("./tfnsw_deploy_id_rsa.pub") })
   vpc_security_group_ids      = [aws_security_group.gtfs_poller.id]
   depends_on                  = [aws_internet_gateway.gtfs_poller]
   iam_instance_profile        = aws_iam_instance_profile.gtfs_poller.id

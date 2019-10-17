@@ -6,6 +6,15 @@ yum update -y
 curl -sL https://rpm.nodesource.com/setup_10.x | bash -
 yum install nodejs -y
 
+# Deployment user
+useradd -m -N -g users deploy
+mkdir -p /home/deploy/.ssh
+cat > /home/deploy/.ssh/authorized_hosts <<KEY
+${deploy_public_key}
+KEY
+chown -R deploy.users /home/deploy/.ssh
+chmod 0600 /home/deploy/.ssh/authorized_keys
+
 # CloudWatch agent
 curl -L https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o $${TMP}/cwa.rpm && \
   rpm -U $${TMP}/cwa.rpm && rm -f $${TMP}/cwa.rpm
@@ -56,13 +65,21 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
 
 EOF
 
-systemctl enable amazon-cloudwatch-agent && systemctl start amazon-cloudwatch-agent
+# app permissions for deploy and cloudwatch user
+groupadd tfnsw
+for u in ec2-user cwagent deploy
+do
+	usermod -a -G tfnsw $${u}
+done
+mkdir -p /home/ec2-user/tfnsw
+chown -R ec2-user.tfnsw /home/ec2-user
+chmod g+x /home/ec2-user
+chgrp tfnsw /home/ec2-user/tfnsw
+chmod 2770 /home/ec2-user/tfnsw
 
-# cloudwatch agent access to logs
-mkdir /home/ec2-user/tfnsw && chown ec2-user.cwagent /home/ec2-user/tfnsw && touch /home/ec2-user/tfnsw/tfnsw.log && \
-chown ec2-user.cwagent /home/ec2-user/tfnsw/tfnsw.log && chgrp cwagent /home/ec2-user && chmod g+x /home/ec2-user && chmod g+x /home/ec2-user/tfnsw && \
-chmod g+r /home/ec2-user/tfnsw/tfnsw.log
+systemctl enable amazon-cloudwatch-agent && systemctl start amazon-cloudwatch-agent
 
 # utilities
 yum install tmux -y
 
+# vi:ft=sh
