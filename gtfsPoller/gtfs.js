@@ -1,3 +1,4 @@
+require('dotenv').config();
 const https = require('https');
 const through2 = require('through2');
 const path = require('path');
@@ -19,7 +20,9 @@ function getGTFSSchema() {
 
 	return new Promise(function(resolve, reject) {
 		const s3 = new aws.S3();
-		s3.getObject({Bucket:'tfnsw-gtfs',Key:'gtfs-realtime.proto'}).promise()
+		s3.getObject(
+			{ Bucket:`${process.env.TFNSW_PREFIX}-${process.env.TFNSW_ENV}-gtfs`, Key:'gtfs-realtime.proto' }
+		).promise()
 			.then( res => { resolve(protocomp(protoschema.parse(res.Body.toString()))) })
 			.catch( reject );
 	});
@@ -81,11 +84,17 @@ function getEntityFromDb(datafile, filter) {
 			filter.on('data', resolve);
 
 			cache.write(datafile, parser, () => {
-				const s3s = s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream();
-				// StreamCatcher will add as many listeners to this stream as their are cache clients
-				// High end number observed is an event affecting 20-30 stations
-				s3s.setMaxListeners(50);
-				cache.read(datafile, s3s);
+				try {
+					const s3s = s3.getObject(
+						{ Bucket : `${process.env.TFNSW_PREFIX}-${process.env.TFNSW_ENV}-gtfs`, Key : datafile }
+					).createReadStream();
+					// StreamCatcher will add as many listeners to this stream as their are cache clients
+					// High end number observed is an event affecting 20-30 stations
+					s3s.setMaxListeners(50);
+					cache.read(datafile, s3s);
+				} catch (err) {
+					reject(err)
+				}
 			})
 	})
 }
