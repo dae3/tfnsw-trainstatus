@@ -7,6 +7,14 @@ resource "aws_lambda_function" "updateFromOpenDataHub" {
   role          = aws_iam_role.updateFromOpenDataHub.arn
 
   tags = local.common_tags
+
+  environment {
+    variables = {
+      "TFNSW_APIKEY" : "",
+      "TFNSW_PREFIX" : "${var.prefix}",
+      "TFNSW_ENV" : "${var.environment}"
+    }
+  }
 }
 
 data "aws_iam_policy_document" "updateFromOpenDataHub-assume" {
