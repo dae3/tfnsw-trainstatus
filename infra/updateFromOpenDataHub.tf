@@ -3,6 +3,7 @@ resource "aws_lambda_function" "updateFromOpenDataHub" {
   handler       = "updateFromOpenDataHub.handler"
   runtime       = "nodejs10.x"
   filename      = "dummy-lambda-handler.zip"
+  timeout       = 300
   role          = aws_iam_role.updateFromOpenDataHub.arn
 
   tags = local.common_tags
