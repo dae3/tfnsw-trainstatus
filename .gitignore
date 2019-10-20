@@ -74,3 +74,4 @@ scratch.txt
 *.zip
 dist/*
 jenkins.cmd
+apikey
