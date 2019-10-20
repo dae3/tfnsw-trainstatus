@@ -29,13 +29,13 @@ function getGTFSSchema() {
 }
 
 // returns a Promise that resolves to an encoded GTFS FeedMessage
-function getTrainsStatus() {
+function getTrainsStatus(apikey) {
 		return request(
 			'https://api.transport.nsw.gov.au/v1/gtfs/alerts/sydneytrains',
 			{ 
 				resolveWithFullResponse : true,
 				encoding : null,
-				headers : { Authorization : `apikey ${process.env.TFNSW_API_KEY}` } 
+				headers : { Authorization : `apikey ${apikey}` } 
 			}
 		)
 }

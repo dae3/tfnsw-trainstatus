@@ -6,13 +6,16 @@ import { from, forkJoin, timer } from 'rxjs';
 import { retry, distinct, concatMapTo, catchError, map, mergeAll, take, filter, tap } from 'rxjs/operators';
 const aws = require('aws-sdk');
 const sqs = new aws.SQS( { region : 'ap-southeast-2' });
+const secrets = new aws.SecretsManager( { region : 'ap-southeast-2' });
 
 exports.handler = function() {
 	const qurl = from(sqs.getQueueUrl(
 		{ QueueName: `${process.env.TFNSW_PREFIX}-${process.env.TFNSW_ENV}-input_queue` }
 	).promise());
 	const schema = from(gtfs.getGTFSSchema());
+	const apikey = from(secrets.getSecretValue({SecretId:`${process.env.TFNSW_PREFIX}-${process.env.TFNSW_ENV}-tfnsw_apikey`}).promise()).pipe(map(data=>data.SecretString));
 
+	// poll timer
 	const once_timer = timer(0, 1).pipe(take(1));
 	const test_timer = timer(0, 10000).pipe(take(3));
 	const prod_timer = timer(0, 1000 * 60 * 10).pipe( filter(function(x) {
@@ -27,10 +30,12 @@ exports.handler = function() {
 	const flush_timer = timer(0, 1000 * 60 * 60 * 24);
 	const alert_timer = prod_timer;
 
-	const emitHandler = function( { schema, qurl } ) {
+	const publishToQueue = (alert, qurl) => sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl } ).promise();
+
+	const emitHandler = function( { schema, qurl, apikey } ) {
 			alert_timer.pipe(
 				tap(t => console.log(`Checking alert feed iteration ${t}`)),
-				concatMapTo(from(gtfs.getTrainsStatus())),
+				concatMapTo(from(gtfs.getTrainsStatus(apikey))),
 				map(raw => gtfs.parseGTFS(raw.body)),
 				map(cooked => schema.FeedMessage.read(cooked).entity),
 				mergeAll(),
@@ -48,11 +53,14 @@ exports.handler = function() {
 			)
 		}
 
-	const errHandler = function(err) { console.log(`HERE ${err}`) }
+	const errHandler = function(err) { console.log(err) }
 
-	forkJoin({ schema : schema, qurl : qurl }).subscribe(emitHandler, errHandler)
+	const awsErrorHandler = function(err) {
+		console.log(err)
+	}
 
-const publishToQueue = (alert, qurl) => sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl } ).promise();
+	forkJoin({ schema : schema, qurl : qurl, apikey : apikey }).subscribe(emitHandler, errHandler)
+
 }
 
 exports.handler();
