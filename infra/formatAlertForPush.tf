@@ -3,7 +3,15 @@ resource "aws_lambda_function" "formatAlertForPush" {
   handler       = "formatAlertForPush.handler"
   runtime       = "nodejs10.x"
   filename      = "dummy-lambda-handler.zip"
+	timeout       = 180
   role          = aws_iam_role.formatAlertForPush.arn
+
+  environment {
+    variables = {
+      TFNSW_PREFIX = "${var.prefix}"
+      TFNSW_ENV = "${var.environment}"
+    }
+  }
 
   tags = local.common_tags
 }

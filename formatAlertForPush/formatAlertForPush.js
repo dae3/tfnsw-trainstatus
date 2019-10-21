@@ -77,11 +77,11 @@ function getEntityName(entity) {
 
 function getEntity(entity) {
   if (entity.trip) {
-    return entity.trip.trip_id
+    return `trip_${entity.trip.trip_id}`
   } else if (entity.stop_id) {
-    return entity.stop_id
+    return `stop_${entity.stop_id}`
   } else if (entity.route_id) {
-    return entity.route_id
+    return `route_${entity.route_id}`
   }
 }
 
