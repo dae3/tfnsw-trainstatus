@@ -96,7 +96,7 @@ function getEntityFromDb(datafile, filter) {
       filter.on('data', resolve);
 
       cache.write(datafile, parser, () => {
-        const s3s = s3.getObject({Bucket:'tfnsw-gtfs',Key:datafile}).createReadStream();
+        const s3s = s3.getObject({Bucket:`${process.env.TFNSW_PREFIX}-${process.env.TFNSW_ENV}-gtfs`,Key:datafile}).createReadStream();
         // StreamCatcher will add as many listeners to this stream as there are cache clients,
         // ie proportional to number of topics for a single event.
         // The high end number observed is for large scale trackwork affecting most lines 
