@@ -21,13 +21,10 @@ data "aws_iam_policy_document" "cloudwatch_writelogs" {
     actions = [
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
-      "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
-      "logs:FilterLogEvents",
-      "logs:GetLogEvents",
       "logs:PutLogEvents",
     ]
-    resources = ["arn:aws:logs:${var.region}:${data.aws_arn.account_id.account}:/${var.prefix}/*"]
+    resources = [ "arn:aws:logs:${var.region}:${data.aws_arn.account_id.account}:*" ]
   }
 }
 
