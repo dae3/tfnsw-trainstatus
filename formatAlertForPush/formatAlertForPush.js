@@ -8,12 +8,17 @@ const sns = new aws.SNS( { region : 'ap-southeast-2' });
 const TOPIC_PREFIX='arn:aws:sns:ap-southeast-2:717350670811:';
 
 exports.handler = async (event) => {
-  const formattedAlerts = event.Records.map(rec=>JSON.parse(rec.body)).map(formatAlert);
+
+  const formattedAlerts = event.Records
+    .map( event => { return { correlationId : event.messageAttributes.get(CorrelationId).StringValue, body : JSON.parse(event.body) } } )
+    .map(formatAlert);
+
   console.log(`${formattedAlerts.length} alerts`);
+
   for await (const alert of formattedAlerts) {
-    console.log(`${alert.topics.reduce(topicReducerForLog)}: ${alert.body.title}`);
+    console.log(`${alert.correlationId}: ${alert.topics.reduce(topicReducerForLog)}: ${alert.title}`);
     Promise.all(
-      alert.topics.map(topic => publishToSNS(`${TOPIC_PREFIX}${topic}`, alert.body.title, alert.body.message))
+      alert.topics.map(topic => publishToSNS(`${TOPIC_PREFIX}${topic}`, alert.title, alert.message))
     )
       .then(results => results.map(console.log));
   }
@@ -44,21 +49,22 @@ function publishToSNS(topic, title, body) {
   });
 }
 
-function formatAlert(entity) {
+function formatAlert(event) {
+  const entity = event.body
   return new Promise((resolve, reject) =>
     {
       var entities = entity.alert.informed_entity.map(getEntityName);
       Promise.all(entities).then(ea => {
         resolve(
           {
-            body : {
-              title : entity.alert.header_text.translation[0].text + ' (' +
-              ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e)).reduce(topicReducerForLog)
-              + ')' ,
-              message : entity.alert.description_text.translation[0].text,
-              link  : entity.alert.url.translation[0].text,
-            },
-            topics : entity.alert.informed_entity.map(getEntity)
+            title : entity.alert.header_text.translation[0].text + ' (' +
+            ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e)).reduce(topicReducerForLog)
+            + ')' ,
+            message : entity.alert.description_text.translation[0].text + "\n\n" +
+            `correlationId: ${event.correlationId}`,
+            link  : entity.alert.url.translation[0].text,
+            topics : entity.alert.informed_entity.map(getEntity),
+            correlationId : event.correlationId
           }
         )
       })
