@@ -8,17 +8,12 @@ const sns = new aws.SNS( { region : 'ap-southeast-2' });
 const TOPIC_PREFIX='arn:aws:sns:ap-southeast-2:717350670811:';
 
 exports.handler = async (event) => {
-
-  const formattedAlerts = event.Records
-    .map( event => JSON.parse(event.body) )
-    .map(formatAlert);
-
+  const formattedAlerts = event.Records.map(rec=>JSON.parse(rec.body)).map(formatAlert);
   console.log(`${formattedAlerts.length} alerts`);
-
   for await (const alert of formattedAlerts) {
-    console.log(`${alert.correlationId}: ${alert.topics.reduce(topicReducerForLog)}: ${alert.title}`);
+    console.log(`${alert.topics.reduce(topicReducerForLog)}: ${alert.body.title}`);
     Promise.all(
-      alert.topics.map(topic => publishToSNS(`${TOPIC_PREFIX}${topic}`, alert.title, alert.message))
+      alert.topics.map(topic => publishToSNS(`${TOPIC_PREFIX}${topic}`, alert.body.title, alert.body.message))
     )
       .then(results => results.map(console.log));
   }
@@ -56,14 +51,14 @@ function formatAlert(entity) {
       Promise.all(entities).then(ea => {
         resolve(
           {
-            title : entity.alert.header_text.translation[0].text + ' (' +
-            ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e)).reduce(topicReducerForLog)
-            + ')' ,
-            message : entity.alert.description_text.translation[0].text + "\n\n" +
-            `correlationId: ${entity.correlationId}`,
-            link  : entity.alert.url.translation[0].text,
-            topics : entity.alert.informed_entity.map(getEntity),
-            correlationId : entity.correlationId
+            body : {
+              title : entity.alert.header_text.translation[0].text + ' (' +
+              ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e)).reduce(topicReducerForLog)
+              + `)` ,
+              message : entity.alert.description_text.translation[0].text + `\n\n${entity.correlationId}`
+              link  : entity.alert.url.translation[0].text,
+            },
+            topics : entity.alert.informed_entity.map(getEntity)
           }
         )
       })
