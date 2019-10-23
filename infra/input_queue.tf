@@ -5,6 +5,7 @@ resource "aws_sqs_queue" "input_queue" {
   max_message_size          = 256000
   message_retention_seconds = 86400
   receive_wait_time_seconds = 0
+  visibility_timeout_seconds = aws_lambda_function.formatAlertForPush.timeout
 
   tags = local.common_tags
 }

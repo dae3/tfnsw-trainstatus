@@ -3,7 +3,7 @@ resource "aws_lambda_function" "formatAlertForPush" {
   handler       = "formatAlertForPush.handler"
   runtime       = "nodejs10.x"
   filename      = "dummy-lambda-handler.zip"
-	timeout       = 180
+	timeout       = 300
   role          = aws_iam_role.formatAlertForPush.arn
 
   environment {
