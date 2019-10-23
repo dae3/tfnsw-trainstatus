@@ -10,7 +10,7 @@ const TOPIC_PREFIX='arn:aws:sns:ap-southeast-2:717350670811:';
 exports.handler = async (event) => {
 
   const formattedAlerts = event.Records
-    .map( event => { return { correlationId : event.messageAttributes.get(CorrelationId).StringValue, body : JSON.parse(event.body) } } )
+    .map( event => JSON.parse(event.body) )
     .map(formatAlert);
 
   console.log(`${formattedAlerts.length} alerts`);
@@ -49,8 +49,7 @@ function publishToSNS(topic, title, body) {
   });
 }
 
-function formatAlert(event) {
-  const entity = event.body
+function formatAlert(entity) {
   return new Promise((resolve, reject) =>
     {
       var entities = entity.alert.informed_entity.map(getEntityName);
@@ -61,10 +60,10 @@ function formatAlert(event) {
             ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e)).reduce(topicReducerForLog)
             + ')' ,
             message : entity.alert.description_text.translation[0].text + "\n\n" +
-            `correlationId: ${event.correlationId}`,
+            `correlationId: ${entity.correlationId}`,
             link  : entity.alert.url.translation[0].text,
             topics : entity.alert.informed_entity.map(getEntity),
-            correlationId : event.correlationId
+            correlationId : entity.correlationId
           }
         )
       })

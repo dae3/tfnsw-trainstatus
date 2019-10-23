@@ -32,13 +32,8 @@ exports.handler = function() {
   const alert_timer = prod_timer;
 
 	const publishToQueue = function(alert, qurl) {
-		return sqs.sendMessage(
-			{
-				MessageBody : alert,
-				MessageAttributes : { "CorrelationId" : { DataType : "String", StringValue : uuidv1() } },
-				QueueUrl : qurl 
-			}
-		).promise();
+		alert.correlationId = uuidv1();
+		return sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl }).promise();
 	}
 
   const emitHandler = function( { schema, qurl, apikey } ) {
