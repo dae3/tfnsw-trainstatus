@@ -1,4 +1,5 @@
 pipeline {
+  agent none
   parameters { 
     string(name: 'Environment', defaultValue: 'dev', description: 'target environment name')
   }
@@ -17,8 +18,5 @@ pipeline {
       }
     }
 
-    stage('deploy') {
-
-    }
   }
 }
