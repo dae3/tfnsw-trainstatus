@@ -1,0 +1,16 @@
+pipeline {
+  agent {
+    image 'node:10-alpine'
+    args '-p 3000:3000'
+  }
+
+  stage('build') {
+    steps {
+      sh 'npm install'
+    }
+  }
+
+  stage('deploy') {
+  
+  }
+}
