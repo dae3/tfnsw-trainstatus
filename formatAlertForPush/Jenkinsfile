@@ -1,16 +1,24 @@
 pipeline {
-  agent {
-    image 'node:10-alpine'
-    args '-p 3000:3000'
+  parameters { 
+    string(name: 'Environment', defaultValue: 'dev', description: 'target environment name')
   }
 
-  stage('build') {
-    steps {
-      sh 'npm install'
+  agent {
+    docker {
+      image 'node:10-alpine'
+        args '-p 3000:3000'
     }
   }
 
-  stage('deploy') {
-  
+  stages {
+    stage('build') {
+      steps {
+        sh 'npm install'
+      }
+    }
+
+    stage('deploy') {
+
+    }
   }
 }
