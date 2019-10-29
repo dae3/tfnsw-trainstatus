@@ -14,7 +14,7 @@ pipeline {
         }
       }
       steps {
-        dir {('formatAlertForPush')
+        dir('formatAlertForPush') {
           sh 'npm install'
         } 
       }
