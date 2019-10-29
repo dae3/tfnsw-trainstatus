@@ -4,7 +4,6 @@ pipeline {
       string(name: 'Environment', defaultValue: 'dev', description: 'target environment name')
     }
 
-
   stages {
     stage('build') {
       agent {
@@ -14,8 +13,9 @@ pipeline {
         }
       }
       steps {
-        sh 'cd formatAlertForPush'
-        sh 'npm install'
+        dir {('formatAlertForPush')
+          sh 'npm install'
+        } 
       }
     }
 
