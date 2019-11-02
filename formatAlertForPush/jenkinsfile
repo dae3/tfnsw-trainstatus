@@ -16,7 +16,7 @@ pipeline {
       steps {
         dir('formatAlertForPush') {
           sh 'npm install'
-          zip zipFile : 'formatAlertForPush.zip', archive
+          zip zipFile: 'formatAlertForPush.zip', archive: true
         } 
       }
     }
