@@ -20,6 +20,12 @@ pipeline {
         } 
       }
     }
+		stage('deploy') {
+			agent none
 
+			steps {
+				s3Upload bucket: 'tfnsw-${Environment}-code', sourceFile 'formatAlertForPush.zip', noUploadOnFailure: true
+			}
+		}
   }
 }
