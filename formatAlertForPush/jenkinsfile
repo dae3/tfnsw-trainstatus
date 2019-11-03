@@ -1,31 +1,39 @@
 pipeline {
 	// a change
-  agent none
-    parameters { 
-      string(name: 'Environment', defaultValue: 'dev', description: 'target environment name')
-    }
+	agent none
+	parameters { 
+		string(name: 'Environment', defaultValue: 'dev', description: 'target environment name')
+	}
 
-  stages {
-    stage('build') {
-      agent {
-        docker {
-          image 'node:10-alpine'
-            args '-p 3000:3000'
-        }
-      }
-      steps {
-        dir('formatAlertForPush') {
-          sh 'npm install'
-          zip zipFile: 'formatAlertForPush.zip'
-        } 
-      }
-    }
+	stages {
+		stage('build') {
+			agent {
+				docker {
+					image 'node:10-alpine'
+					args '-p 3000:3000'
+				}
+			}
+			steps {
+				dir('formatAlertForPush') {
+					sh 'npm install'
+					zip zipFile: 'formatAlertForPush.zip', artifact: true
+				} 
+			}
+		}
 		stage('deploy') {
 			agent none
 
 			steps {
-				s3Upload bucket: 'tfnsw-${Environment}-code', sourceFile 'formatAlertForPush.zip', noUploadOnFailure: true
+				s3Upload bucket: 'tfnsw-${Environment}-code', entries: {
+					sourceFile: 'formatAlertForPush.zip', noUploadOnFailure: true
+				}
 			}
 		}
-  }
+	}
+
+	post {
+		always {
+			archiveArtifacts artifacts: '*.zip', fingerprint: true
+		}
+	}
 }
