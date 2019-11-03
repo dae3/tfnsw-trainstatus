@@ -16,7 +16,7 @@ pipeline {
 			steps {
 				dir('formatAlertForPush') {
 					sh 'npm install'
-					zip zipFile: 'formatAlertForPush.zip', artifact: true
+					zip zipFile: 'formatAlertForPush.zip'
 				} 
 			}
 		}
@@ -24,9 +24,7 @@ pipeline {
 			agent none
 
 			steps {
-				s3Upload bucket: 'tfnsw-${Environment}-code', entries: {
-					sourceFile: 'formatAlertForPush.zip', noUploadOnFailure: true
-				}
+				s3Upload consoleLogLevel: 'INFO', dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: "tfnsw-${params.Environment}-code", excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: false, selectedRegion: 'us-iso-east-1', showDirectlyInBrowser: false, sourceFile: 'formatAlertForPush.zip', storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE', profileName: 'tfnsw', userMetadata: []
 			}
 		}
 	}
