@@ -20,8 +20,9 @@ pipeline {
 		}
 		stage('deploy') {
 			agent {
-				docker {
-					image 'mesosphere/aws-cli'
+				dockerfile {
+					dir 'deploy-container'
+					args '-e AWS_ACCESS_KEY_ID=foo -e AWS_SECRET_ACCESS_KEY=bar -e AWS_DEFAULT_REGION=ap-southeast-2'
 				}
 			}
 			steps {
