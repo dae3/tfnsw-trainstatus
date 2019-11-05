@@ -15,15 +15,20 @@ pipeline {
 			steps {
 				dir('formatAlertForPush') {
 					sh 'npm install'
-					zip zipFile: 'formatAlertForPush.zip'
 				} 
 			}
 		}
 		stage('deploy') {
-			agent none
-
+			agent {
+				docker {
+					image 'mesosphere/aws-cli'
+				}
+			}
 			steps {
-				s3Upload consoleLogLevel: 'INFO', dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: "tfnsw-${params.Environment}-code", excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: false, selectedRegion: 'us-iso-east-1', showDirectlyInBrowser: false, sourceFile: 'formatAlertForPush.zip', storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE', profileName: 'tfnsw', userMetadata: []
+				dir('formatAlertForPush') {
+					sh 'zip add formatAlertForPush.zip *.json *.js node_modules/*'
+
+				}
 			}
 		}
 	}
