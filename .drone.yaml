@@ -6,6 +6,6 @@ steps:
   - name: build
     image: node:10-alpine
     commands:
+      - cd formatAlertForPush
       - npm install
-
 
