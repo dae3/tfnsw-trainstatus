@@ -32,7 +32,6 @@ exports.handler = function() {
   const alert_timer = prod_timer;
 
 	const publishToQueue = function(alert, qurl) {
-		alert.correlationId = uuidv1();
 		return sqs.sendMessage( { MessageBody : alert, QueueUrl : qurl }).promise();
 	}
 
@@ -44,6 +43,7 @@ exports.handler = function() {
       map(cooked => schema.FeedMessage.read(cooked).entity),
       mergeAll(),
       distinct(alert => alert.id, flush_timer), 
+      map(alert => { alert.correlationId = uuidv1(); return alert }),
       map(JSON.stringify),
       map(alert => from(publishToQueue(alert, qurl.QueueUrl)) ),
       mergeAll(),
