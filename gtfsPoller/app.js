@@ -1,4 +1,5 @@
 'use strict';
+
 require('dotenv').config();
 const gtfs = require('./gtfs.js');
 const fs = require('fs');
