@@ -1,12 +1,13 @@
 {
   "name": "formatalertforpush",
   "version": "1.0.0",
-  "engines" : {
-    "node" : "10.0.0"
+  "engines": {
+    "node": "10.0.0"
   },
   "description": "",
   "main": "formatAlertForPush.js",
   "scripts": {
+    "runlocal": "docker run -d --rm -v $(pwd):/var/task:ro,delegated -e DOCKER_LAMBDA_STAY_OPEN=1 -e DOCKER_LAMBDA_WATCH=1 -p 9001:9001 lambci/lambda:nodejs10.x formatAlertForPush.handler",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
