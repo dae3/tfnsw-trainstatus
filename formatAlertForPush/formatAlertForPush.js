@@ -7,6 +7,59 @@ const filter = require('through2-filter');
 const sns = new aws.SNS( { region : 'ap-southeast-2' });
 const TOPIC_PREFIX='arn:aws:sns:ap-southeast-2:717350670811:';
 
+/*
+  Lambda handler. event is [ eventobj ]
+  eventobj is
+  {
+	"id": "1",
+	"is_deleted": false,
+	"trip_update": null,
+	"vehicle": null,
+	"alert": {
+		"active_period": [],
+		"informed_entity": [{
+			"agency_id": "NSWTrains",
+			"route_id": "BMT_2",
+			"route_type": 0,
+			"trip": null,
+			"stop_id": ""
+		}, {
+			"agency_id": "NSWTrains",
+			"route_id": "BMT_1",
+			"route_type": 0,
+			"trip": null,
+			"stop_id": ""
+		}],
+		"cause": {
+			"value": 1,
+			"options": {}
+		},
+		"effect": {
+			"value": 8,
+			"options": {}
+		},
+		"url": {
+			"translation": [{
+				"text": "https://transportnsw.info/alerts#/train",
+				"language": "en"
+			}]
+		},
+		"header_text": {
+			"translation": [{
+				"text": "Blue Mountains Line - Partial Closure",
+				"language": "en"
+			}]
+		},
+		"description_text": {
+			"translation": [{
+				"text": "Train services have been suspended and replaced by buses between Mt Victoria, Lithgow and Bathurst in both directions due to infrastructure damage caused by bushfires. \n\nThere is no forecast when the line can reopen. Please allow additional travel time and check transport apps for further details.",
+				"language": "en"
+			}]
+		}
+	}
+  }
+ */
+
 module.exports.handler = async (event) => {
   const formattedAlerts = event.Records.map(rec=>JSON.parse(rec.body)).map(formatAlert);
   console.log(`${formattedAlerts.length} alerts`);
