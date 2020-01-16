@@ -7,13 +7,66 @@ const filter = require('through2-filter');
 const sns = new aws.SNS( { region : 'ap-southeast-2' });
 const TOPIC_PREFIX='arn:aws:sns:ap-southeast-2:717350670811:';
 
-exports.handler = async (event) => {
+/*
+  Lambda handler. event is [ eventobj ]
+  eventobj is
+  {
+	"id": "1",
+	"is_deleted": false,
+	"trip_update": null,
+	"vehicle": null,
+	"alert": {
+		"active_period": [],
+		"informed_entity": [{
+			"agency_id": "NSWTrains",
+			"route_id": "BMT_2",
+			"route_type": 0,
+			"trip": null,
+			"stop_id": ""
+		}, {
+			"agency_id": "NSWTrains",
+			"route_id": "BMT_1",
+			"route_type": 0,
+			"trip": null,
+			"stop_id": ""
+		}],
+		"cause": {
+			"value": 1,
+			"options": {}
+		},
+		"effect": {
+			"value": 8,
+			"options": {}
+		},
+		"url": {
+			"translation": [{
+				"text": "https://transportnsw.info/alerts#/train",
+				"language": "en"
+			}]
+		},
+		"header_text": {
+			"translation": [{
+				"text": "Blue Mountains Line - Partial Closure",
+				"language": "en"
+			}]
+		},
+		"description_text": {
+			"translation": [{
+				"text": "Train services have been suspended and replaced by buses between Mt Victoria, Lithgow and Bathurst in both directions due to infrastructure damage caused by bushfires. \n\nThere is no forecast when the line can reopen. Please allow additional travel time and check transport apps for further details.",
+				"language": "en"
+			}]
+		}
+	}
+  }
+ */
+
+module.exports.handler = async (event) => {
   const formattedAlerts = event.Records.map(rec=>JSON.parse(rec.body)).map(formatAlert);
   console.log(`${formattedAlerts.length} alerts`);
   for await (const alert of formattedAlerts) {
-    console.log(`${alert.topics.reduce(topicReducerForLog)}: ${alert.body.title}`);
+    console.log(`${alert.correlationId} : ${alert.topics.reduce(topicReducerForLog)} : ${alert.body.title}`);
     Promise.all(
-      alert.topics.map(topic => publishToSNS(`${TOPIC_PREFIX}${topic}`, alert.body.title, alert.body.message))
+      alert.topics.map(topic => publishToSNS(`${TOPIC_PREFIX}${topic}`, alert.body.title, alert.body.message, alert.correlationId))
     )
       .then(results => results.map(console.log));
   }
@@ -21,21 +74,21 @@ exports.handler = async (event) => {
 
 const topicReducerForLog = (acc, value, idx) => { return(acc + (idx > 0 ? ', ' : ''  + value), '') }
 
-function publishToSNS(topic, title, body) {
+function publishToSNS(topic, title, body, correlationId) {
   return new Promise((resolve, reject) => {
     sns.publish(
       {
-        Subject : title, 
+        Subject : `${title} (${correlationId})`, 
         MessageStructure : 'json',
         Message : JSON.stringify( { default : body, email : body }),
         TopicArn : topic
       }, 
       (err, data) => {
         if (!err) {
-          resolve(`Delivered ${data.MessageId} to ${topic}`);
+          resolve(`${correlationId} Delivered ${data.MessageId} to ${topic}`);
         } else {
           if (err.code === 'NotFound') {
-            resolve(`Topic ${topic} not found`);
+            resolve(`${correlationId} Topic ${topic} not found`);
           } else {
             resolve(err);
           }
@@ -54,8 +107,8 @@ function formatAlert(entity) {
             body : {
               title : entity.alert.header_text.translation[0].text + ' (' +
               ea.filter((e,i,a) => i == 0 ? true : !a.slice(0,i).includes(e)).reduce(topicReducerForLog)
-              + ')' ,
-              message : entity.alert.description_text.translation[0].text,
+              + `)` ,
+              message : entity.alert.description_text.translation[0].text + `\n\n${entity.correlationId}`,
               link  : entity.alert.url.translation[0].text,
             },
             topics : entity.alert.informed_entity.map(getEntity)
