@@ -52,6 +52,13 @@ resource "aws_api_gateway_method" "get_subscription" {
   resource_id   = aws_api_gateway_resource.subscription.id
   http_method   = "GET"
   authorization = "NONE"
+	request_validator_id = aws_api_gateway_request_validator.body_and_parameters.id
+}
+resource "aws_api_gateway_request_validator" "body_and_parameters" {
+  name = "Body and parameters"
+  rest_api_id = aws_api_gateway_rest_api.subscription.id
+  validate_request_body = true
+  validate_request_parameters = true
 }
 
 resource "aws_api_gateway_method" "post_subscription" {
@@ -59,16 +66,12 @@ resource "aws_api_gateway_method" "post_subscription" {
   resource_id   = aws_api_gateway_resource.subscription.id
   http_method   = "POST"
   authorization = "NONE"
+  request_validator_id = aws_api_gateway_request_validator.body_and_parameters.id
+  request_models = { "application/json" : aws_api_gateway_model.newsubscription.name }
+  request_parameters = { "method.request.header.Content-Type" : true }
 }
 
 # GET /subscription response
-resource "aws_api_gateway_integration_response" "get_subscription_200" {
-  rest_api_id = aws_api_gateway_rest_api.subscription.id
-  resource_id = aws_api_gateway_resource.subscription.id
-  http_method = aws_api_gateway_method.get_subscription.http_method
-  status_code = 200
-
-}
 
 resource "aws_api_gateway_method_response" "get_subscription_200" {
   rest_api_id     = aws_api_gateway_rest_api.subscription.id
@@ -84,7 +87,7 @@ resource "aws_api_gateway_integration" "get_subscription" {
   http_method = aws_api_gateway_method.get_subscription.http_method
 
   integration_http_method = "POST"
-  type                    = "AWS_PROXY"
+  type                    = "AWS"
   uri                     = aws_lambda_function.subscriptionApi.invoke_arn
 }
 
@@ -120,7 +123,8 @@ resource "aws_api_gateway_integration" "post_subscription" {
   http_method = aws_api_gateway_method.post_subscription.http_method
 
   integration_http_method = "POST"
-  type                    = "AWS_PROXY"
+  type                    = "AWS"
   uri                     = aws_lambda_function.subscriptionApi.invoke_arn
+	passthrough_behavior = "NEVER"
 }
 

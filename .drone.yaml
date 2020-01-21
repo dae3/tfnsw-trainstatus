@@ -1,5 +1,50 @@
 kind: pipeline
 type: docker
+name: subscriptionApiHandler
+
+steps:
+  - name: build
+    image: node:10-alpine
+    commands:
+      - apk update && apk add zip
+      - cd subscriptionApi
+      - npm install
+      - zip -qr5 ../subscriptionApi.zip .
+  - name: s3-publish
+    image: plugins/s3
+    settings:
+      access_key:
+         from_secret: CI_KEY
+      secret_key:
+        from_secret: CI_SECRET_KEY
+      acl: private
+      region: ap-southeast-2
+      bucket: tfnsw-dev-code
+      target: .
+      source: subscriptionApi.zip
+  - name: deploy-lambda
+    image: croudtech/drone-lambda-plugin
+    environment:
+      AWS_ACCESS_KEY_ID:
+         from_secret: CI_KEY
+      AWS_SECRET_KEY:
+         from_secret: CI_SECRET_KEY
+      AWS_DEFAULT_REGION:
+         ap-southeast-2
+    settings:
+      pull: true
+      region: ap-southeast-2
+      function_name: tfnsw-dev-subscriptionApi
+      build_args_from_env:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_KEY
+        - AWS_DEFAULT_REGION
+      s3_bucket: tfnsw-dev-code
+      file_name: subscriptionApi.zip
+
+---
+kind: pipeline
+type: docker
 name: formatAlertForPush
 
 steps:
@@ -9,7 +54,7 @@ steps:
       - apk update && apk add zip
       - cd formatAlertForPush
       - npm install
-      - zip -qr9 ../formatAlertForPush.zip .
+      - zip -qr5 ../formatAlertForPush.zip .
   - name: s3-publish
     image: plugins/s3
     settings:
