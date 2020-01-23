@@ -46,13 +46,13 @@ exports.handler = (event, context, callback) => {
     listSubscriptions(sns).then((subs) => {
       res.body = JSON.stringify(subs.map( s => {
         const arnParts = s.TopicArn.split(':');
-        const targetParts = arnParts[5].split('_');
+        const topicParts = arnParts[5].split('_');
 
         return {
           type : s.Protocol,
           id: s.SubscriptionArn.split(':')[6],
-          targetType : targetParts[0],
-          target : `${targetParts[1]}_${targetParts[2]}`
+          topicType : topicParts[0],
+          topic : `${topicParts[1]}_${topicParts[2]}`
         }
 
       }))
