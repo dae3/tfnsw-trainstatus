@@ -12,7 +12,7 @@ exports.handler = (event, context, callback) => {
   if (event.httpMethod === 'POST' && event.path === '/subscription') {
     let body;
     try { body = JSON.parse(event.body) }
-    catch (err) { 
+    catch (err) {
       if (typeof err == SyntaxError) {
         res.statusCode = 400
         callback(null, res)
@@ -26,7 +26,7 @@ exports.handler = (event, context, callback) => {
       Endpoint : body.target,
       ReturnSubscriptionArn : true
     }).promise()
-      .then((data) => { 
+      .then((data) => {
         res.body = JSON.stringify({
           type : body.type,
           topic : body.topic,
@@ -43,27 +43,36 @@ exports.handler = (event, context, callback) => {
         callback(null, res)
       })
   } else if (event.httpMethod === 'GET' && event.path === '/subscription') {
-    listSubscriptions(sns).then((subs) => {
-      res.body = JSON.stringify(subs.map( s => {
-        const arnParts = s.TopicArn.split(':');
-        const topicParts = arnParts[5].split('_');
+	if (event.pathParameters && event.pathParameters.hasOwnProperty('subscription')) {
+	  // GET /subscription/{ID}, ID is in event.pathParameters.subscription
+	  listSubscriptions(sns).then((subs) => {
+		res.body = JSON.stringify(subs.filter(a => a.SubscriptionArn.split(':')[6] == event.pathParameters.subscription))
+		callback(null, res)
+	  })
 
-        return {
-          type : s.Protocol,
-          id: s.SubscriptionArn.split(':')[6],
-          topicType : topicParts[0],
-          topic : `${topicParts[1]}_${topicParts[2]}`
-        }
+	} else {
+	  listSubscriptions(sns).then((subs) => {
+		res.body = JSON.stringify(subs.map( s => {
+		  const arnParts = s.TopicArn.split(':');
+		  const topicParts = arnParts[5].split('_');
 
-      }))
-      callback(null, res)
-    })
-      .catch(err => {
-        res.statusCode = err.statusCode
-        res.body = err.message
-        res.headers['Content-Type'] = 'text/plain'
-        callback(null, res)
-      })
+		  return {
+			type : s.Protocol,
+			id: s.SubscriptionArn.split(':')[6],
+			topicType : topicParts[0],
+			topic : `${topicParts[1]}_${topicParts[2]}`
+		  }
+
+		}))
+		callback(null, res)
+	  })
+		.catch(err => {
+		  res.statusCode = err.statusCode
+		  res.body = err.message
+		  res.headers['Content-Type'] = 'text/plain'
+		  callback(null, res)
+		})
+	}
   } else {
     res.statusCode = 404
     callback(null, res)
