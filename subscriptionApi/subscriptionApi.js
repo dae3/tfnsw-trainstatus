@@ -73,8 +73,29 @@ exports.handler = (event, context, callback) => {
 		  callback(null, res)
 		})
 	}
+  } else if (event.httpMethod === 'DELETE' && event.path === '/subscription' && event.pathParameters && event.pathParameters.hasOwnProperty('subscription')) {
+	listSubscriptions(sns)
+	  .then(subs => {
+		var matched = subs.filter(a => a.SubscriptionArn.split(':')[6] == event.pathParameters.subscription)
+		if (matched.length === 1) {
+		  sns.unsubscribe( { SubscriptionArn : matched[0].SubscriptionArn }).promise()
+			.then(res.statusCode = 200)
+			.catch(err => {
+			  res.statusCode = 500
+			  res.body = err.message
+			})
+		} else {
+		  res.statusCode = 404
+		}
+		callback(null, res)
+	  })
+	  .catch(err => {
+		res.statusCode = 500
+		res.body = err.message
+		callback(null, res)
+	  })
   } else {
-    res.statusCode = 404
+    res.statusCode = 508
     callback(null, res)
   }
 }
