@@ -75,3 +75,9 @@ scratch.txt
 dist/*
 jenkins.cmd
 apikey
+
+# intermediates
+**/dist/*
+
+# drone local exec secrets
+secrets

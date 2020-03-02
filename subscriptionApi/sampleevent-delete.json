@@ -1,0 +1,15 @@
+{
+    "resource": "/",
+    "path": "/subscription",
+    "httpMethod": "DELETE",
+    "headers": {},
+    "multiValueHeaders": { "Content-Type" : [ "application/json" ] },
+    "queryStringParameters": {},
+    "multiValueQueryStringParameters": {},
+    "pathParameters":  { "subscription" :
+      "b4d81306-7e17-447c-81ba-5776d748aaf9"},
+    "stageVariables": {},
+    "requestContext": {},
+    "body": "",
+    "isBase64Encoded": false
+}

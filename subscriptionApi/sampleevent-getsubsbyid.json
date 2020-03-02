@@ -1,0 +1,15 @@
+{
+    "resource": "/",
+    "path": "/subscription",
+    "httpMethod": "GET",
+    "headers": {},
+    "multiValueHeaders": { "Content-Type" : [ "application/json" ] },
+    "queryStringParameters": {},
+    "multiValueQueryStringParameters": {},
+    "pathParameters":  { "subscription" :
+      "46c107a2-b204-4305-969c-fc85aedea0a6" },
+    "stageVariables": {},
+    "requestContext": {},
+    "body": "",
+    "isBase64Encoded": false
+}
