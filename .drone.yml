@@ -2,6 +2,10 @@ kind: pipeline
 type: docker
 name: subscriptionApiHandler
 
+trigger:
+  branch:
+    - master
+
 steps:
   - name: build
     image: node:10-alpine
@@ -46,6 +50,10 @@ steps:
 kind: pipeline
 type: docker
 name: formatAlertForPush
+
+trigger:
+  branch:
+    - master
 
 steps:
   - name: build
@@ -92,6 +100,10 @@ kind: pipeline
 type: docker
 name: updateTopicsFromGTFS
 
+trigger:
+  branch:
+    - master
+
 steps:
   - name: build
     image: node:10-alpine
@@ -136,6 +148,10 @@ steps:
 kind: pipeline
 type: docker
 name: updateFromOpenDataHub
+
+trigger:
+  branch:
+    - master
 
 steps:
   - name: build
@@ -182,6 +198,10 @@ steps:
 kind: pipeline
 type: docker
 name: gtfsPoller
+
+trigger:
+  branch:
+    - master
 
 steps:
   - name: build
